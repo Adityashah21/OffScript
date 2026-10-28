@@ -31,12 +31,18 @@ export function createApp(): Express {
     })
   );
 
-  // 2. CORS restriction to CLIENT_ORIGIN
+  // 2. CORS restriction to CLIENT_ORIGIN (supports comma-separated origins)
+  const allowedOrigins = env.CLIENT_ORIGIN.split(",").map((s) => s.trim().replace(/\/$/, ""));
+
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, server-to-server) or matching CLIENT_ORIGIN
-        if (!origin || origin === env.CLIENT_ORIGIN) {
+        // Allow requests with no origin (like mobile apps, curl, server-to-server)
+        if (!origin) {
+          return callback(null, true);
+        }
+        const normalizedOrigin = origin.replace(/\/$/, "");
+        if (allowedOrigins.includes("*") || allowedOrigins.includes(normalizedOrigin)) {
           callback(null, true);
         } else {
           callback(new AppError(403, "CORS_FORBIDDEN", "Origin not permitted"));
