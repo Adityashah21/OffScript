@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production builds
+dist/
+dist-ssr/
+*/dist/
+.output/
+.vinxi/
+.tanstack/**
+.nitro/
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# Dynamic uploads (preserve seed assets)
+server/uploads/*
+!server/uploads/seed/
+!server/uploads/seed/*
+
+# Logs & temp
+logs/
+*.log
+coverage/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
