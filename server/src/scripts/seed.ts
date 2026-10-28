@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { connectDB, disconnectDB } from "../config/db.js";
 import { env } from "../config/env.js";
 import { Product } from "../models/Product.js";
@@ -92,7 +92,7 @@ export async function seed(baseUrl: string = env.PUBLIC_BASE_URL): Promise<void>
   console.log("🎉 Seeding completed successfully!");
 }
 
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   seed()
     .then(async () => {
       await disconnectDB();

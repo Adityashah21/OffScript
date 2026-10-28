@@ -1,3 +1,4 @@
+import { pathToFileURL } from "url";
 import bcrypt from "bcryptjs";
 import { connectDB, disconnectDB } from "../config/db.js";
 import { env } from "../config/env.js";
@@ -23,7 +24,7 @@ export async function createAdmin(): Promise<void> {
 }
 
 // Execute directly if run via CLI
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   createAdmin()
     .then(async () => {
       await disconnectDB();
