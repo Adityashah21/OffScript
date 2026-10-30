@@ -10,9 +10,9 @@ import { AppError } from "../../middleware/errorHandler.js";
 
 export const adminAuthRouter = Router();
 
-// POST /api/admin/auth/login (or /api/admin/login)
+// POST /api/admin/auth/login or /api/admin/login
 adminAuthRouter.post(
-  "/login",
+  ["/login", "/"],
   loginRateLimiter,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

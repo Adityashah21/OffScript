@@ -31,8 +31,8 @@ export function createApp(): Express {
     })
   );
 
-  // 2. CORS restriction to CLIENT_ORIGIN (supports comma-separated origins)
-  const allowedOrigins = env.CLIENT_ORIGIN.split(",").map((s) => s.trim().replace(/\/$/, ""));
+  // 2. CORS restriction (supports comma-separated origins, wildcards, Vercel & Render domains)
+  const configuredOrigins = env.CLIENT_ORIGIN.split(",").map((s) => s.trim().replace(/\/$/, ""));
 
   app.use(
     cors({
@@ -42,11 +42,44 @@ export function createApp(): Express {
           return callback(null, true);
         }
         const normalizedOrigin = origin.replace(/\/$/, "");
-        if (allowedOrigins.includes("*") || allowedOrigins.includes(normalizedOrigin)) {
-          callback(null, true);
-        } else {
-          callback(new AppError(403, "CORS_FORBIDDEN", "Origin not permitted"));
+
+        // Allow wildcard '*'
+        if (configuredOrigins.includes("*")) {
+          return callback(null, true);
         }
+
+        // Allow exact matches from CLIENT_ORIGIN
+        if (configuredOrigins.includes(normalizedOrigin)) {
+          return callback(null, true);
+        }
+
+        // Allow any Vercel deployment (storefront, admin dashboard, preview branches)
+        if (
+          normalizedOrigin.endsWith(".vercel.app") ||
+          normalizedOrigin.includes(".vercel.app")
+        ) {
+          return callback(null, true);
+        }
+
+        // Allow any Render deployment
+        if (
+          normalizedOrigin.endsWith(".onrender.com") ||
+          normalizedOrigin.includes(".onrender.com")
+        ) {
+          return callback(null, true);
+        }
+
+        // Allow localhost for development
+        if (
+          normalizedOrigin.startsWith("http://localhost:") ||
+          normalizedOrigin === "http://localhost" ||
+          normalizedOrigin.startsWith("http://127.0.0.1:") ||
+          normalizedOrigin === "http://127.0.0.1"
+        ) {
+          return callback(null, true);
+        }
+
+        callback(new AppError(403, "CORS_FORBIDDEN", `Origin '${origin}' not permitted`));
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

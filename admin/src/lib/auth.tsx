@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
-    const res = await api.post<LoginResponse>('/api/admin/login', { email, password });
+    const res = await api.post<LoginResponse>('/api/admin/auth/login', { email, password });
     if (res?.token) {
       setToken(res.token);
       setTokenState(res.token);
