@@ -1,11 +1,15 @@
 import { createApp } from "./app.js";
 import { connectDB } from "./config/db.js";
 import { env } from "./config/env.js";
+import { createAdmin } from "./scripts/createAdmin.js";
 
 async function bootstrap() {
   try {
     await connectDB();
     console.log("Connected to MongoDB successfully");
+
+    // Automatically ensure admin user exists in MongoDB on server start
+    await createAdmin();
 
     const app = createApp();
 

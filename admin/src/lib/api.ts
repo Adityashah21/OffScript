@@ -113,11 +113,6 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
 
     clearTimeout(timeoutId);
 
-    if (response.status === 401) {
-      notifyUnauthorized();
-      throw new ApiError('Session expired or unauthorized. Please log in again.', 401);
-    }
-
     // Parse JSON or text
     const contentType = response.headers.get('content-type') || '';
     let data: any = null;
@@ -130,6 +125,18 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       } catch {
         data = text;
       }
+    }
+
+    if (response.status === 401) {
+      const isLoginRequest = url.includes('/login');
+      if (!isLoginRequest) {
+        notifyUnauthorized();
+      }
+      const errorData = data as ApiErrorResponse;
+      const errorMessage =
+        (typeof errorData === 'object' && (errorData?.message || errorData?.error)) ||
+        (isLoginRequest ? 'Invalid email or password' : 'Session expired or unauthorized. Please log in again.');
+      throw new ApiError(errorMessage, 401);
     }
 
     if (!response.ok) {
