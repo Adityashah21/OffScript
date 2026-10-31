@@ -289,6 +289,54 @@ export const ProductForm: React.FC = () => {
         </div>
       )}
 
+      {/* AI Try-On Studio Top Spotlight Station */}
+      <div className="p-4 rounded-xl border-2 border-amber-500/50 bg-gradient-to-r from-amber-500/10 via-primary/5 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5">
+                AI Virtual Model Try-On Studio
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold border border-amber-500/30">
+                Gemini 2.0 + Imagen 3
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Have your own model's picture? Upload it alongside your garment flatlay to auto-generate 4 high-fashion catalog angles (Front, 45° Side, Back, Detail).
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const el = document.getElementById('ai-model-studio-card');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+            className="text-xs font-mono gap-1.5 border-amber-500/40 text-foreground hover:bg-amber-500/10"
+          >
+            Scroll to Studio ↓
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setIsAiStudioOpen(true)}
+            className="text-xs font-mono gap-1.5 bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-sm"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Launch Studio Modal
+          </Button>
+        </div>
+      </div>
+
       {/* Main Form + Live Preview Grid */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -588,10 +636,10 @@ export const ProductForm: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsAiStudioOpen(true)}
-                  className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10 text-xs font-mono"
+                  className="gap-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 text-xs font-mono font-semibold"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                  Full Studio View
+                  Launch Studio Modal
                 </Button>
               </CardHeader>
               <CardContent className="pt-4">
@@ -600,7 +648,7 @@ export const ProductForm: React.FC = () => {
                   control={control}
                   render={({ field }) => (
                     <ImageUploadField
-                      images={field.value}
+                      images={field.value || []}
                       onChange={field.onChange}
                       error={errors.images?.message}
                       onOpenAiStudio={() => setIsAiStudioOpen(true)}

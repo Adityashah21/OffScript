@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   RefreshCw,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import type { Product } from '../types/api';
@@ -155,6 +156,17 @@ export const Products: React.FC = () => {
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
+
+          <Link to="/ai-studio">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs font-mono border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <span>AI Model Studio</span>
+            </Button>
+          </Link>
 
           <Link to="/products/new">
             <Button variant="default" size="sm" className="gap-1.5 text-xs font-medium">

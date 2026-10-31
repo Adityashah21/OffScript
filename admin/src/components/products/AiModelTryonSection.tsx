@@ -87,11 +87,13 @@ const AESTHETIC_OPTIONS = [
 ];
 
 export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
-  productName,
-  category,
-  currentImages,
+  productName = '',
+  category = '',
+  currentImages = [],
   onAddImages,
 }) => {
+  const safeImages = Array.isArray(currentImages) ? currentImages : [];
+
   // Model state
   const [modelType, setModelType] = useState<'upload' | 'preset'>('upload');
   const [customModelUrl, setCustomModelUrl] = useState<string>('');
@@ -101,7 +103,7 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
   const modelFileInputRef = useRef<HTMLInputElement>(null);
 
   // Garment packshot state
-  const [garmentUrl, setGarmentUrl] = useState<string>(currentImages[0] || '');
+  const [garmentUrl, setGarmentUrl] = useState<string>(safeImages[0] || '');
   const [isUploadingGarment, setIsUploadingGarment] = useState(false);
   const garmentFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,7 +111,13 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
   const [aesthetic, setAesthetic] = useState(AESTHETIC_OPTIONS[0]);
 
   // Gemini API Key & Connection status
-  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('offscript_gemini_api_key') || '');
+  const [geminiApiKey, setGeminiApiKey] = useState(() => {
+    try {
+      return localStorage.getItem('offscript_gemini_api_key') || '';
+    } catch {
+      return '';
+    }
+  });
   const [hasServerKey, setHasServerKey] = useState(false);
   const [isVerifyingKey, setIsVerifyingKey] = useState(false);
   const [keyVerificationStatus, setKeyVerificationStatus] = useState<string | null>(null);
@@ -123,10 +131,10 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
 
   // Auto-sync garment from product images if updated
   useEffect(() => {
-    if (!garmentUrl && currentImages.length > 0) {
-      setGarmentUrl(currentImages[0]);
+    if (!garmentUrl && safeImages.length > 0) {
+      setGarmentUrl(safeImages[0]);
     }
-  }, [currentImages, garmentUrl]);
+  }, [safeImages, garmentUrl]);
 
   // Check server presets & keys on mount
   useEffect(() => {
@@ -281,15 +289,18 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
   };
 
   return (
-    <Card className="border-2 border-primary/30 bg-primary/[0.02] shadow-sm">
-      <CardHeader className="pb-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-muted/20">
+    <Card
+      id="ai-model-studio-card"
+      className="border-2 border-amber-500/70 dark:border-amber-400/70 bg-gradient-to-b from-amber-500/[0.04] to-background shadow-md shadow-amber-500/10 scroll-mt-24 transition-all"
+    >
+      <CardHeader className="pb-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-amber-500/10 dark:bg-amber-500/15">
         <div>
           <div className="flex items-center gap-2">
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-amber-500" />
               AI Virtual Model Try-On Studio
             </CardTitle>
-            <Badge variant="outline" className="font-mono text-[10px] text-primary border-primary/40">
+            <Badge variant="outline" className="font-mono text-[10px] text-amber-700 dark:text-amber-300 border-amber-500/50 bg-amber-500/20 font-bold">
               Gemini 2.0 + Imagen 3
             </Badge>
           </div>

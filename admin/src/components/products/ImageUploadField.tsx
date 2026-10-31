@@ -16,11 +16,12 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
-  images,
+  images = [],
   onChange,
   error,
   onOpenAiStudio,
 }) => {
+  const safeImages = Array.isArray(images) ? images : [];
   const [isUploading, setIsUploading] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
@@ -65,7 +66,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
 
     setIsUploading(false);
     if (uploadedUrls.length > 0) {
-      onChange([...images, ...uploadedUrls]);
+      onChange([...safeImages, ...uploadedUrls]);
       toast.success(`Uploaded ${uploadedUrls.length} image(s)`);
     }
   };
@@ -77,19 +78,19 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       toast.error('Please enter a valid image URL starting with http:// or https://');
       return;
     }
-    onChange([...images, trimmed]);
+    onChange([...safeImages, trimmed]);
     setUrlInput('');
   };
 
   const handleRemoveImage = (index: number) => {
-    const next = [...images];
+    const next = [...safeImages];
     next.splice(index, 1);
     onChange(next);
   };
 
   const handleMoveImage = (from: number, to: number) => {
-    if (to < 0 || to >= images.length) return;
-    const next = [...images];
+    if (to < 0 || to >= safeImages.length) return;
+    const next = [...safeImages];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
     onChange(next);
@@ -200,9 +201,9 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       {/* Thumbnails Gallery with Reordering */}
-      {images.length > 0 && (
+      {safeImages.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-2">
-          {images.map((url, idx) => (
+          {safeImages.map((url, idx) => (
             <div
               key={idx}
               className={`group relative aspect-[3/4] rounded-lg border overflow-hidden bg-muted flex items-center justify-center ${
@@ -253,7 +254,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
                   <button
                     type="button"
                     onClick={() => handleMoveImage(idx, idx + 1)}
-                    disabled={idx === images.length - 1}
+                    disabled={idx === safeImages.length - 1}
                     className="p-1 rounded bg-background/80 text-foreground hover:bg-background disabled:opacity-30 disabled:pointer-events-none"
                     title="Move right"
                   >
