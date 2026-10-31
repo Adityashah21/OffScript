@@ -146,17 +146,59 @@ function CODOrderForm({
       }
 
       const result = await response.json();
-      recordCustomerOrder(result.ref, {
-        fullName: f.fullName.trim(),
-        mobile: f.mobile.trim(),
-        email: f.email?.trim() || "",
-        house: f.house.trim(),
-        street: f.street.trim(),
-        landmark: f.landmark?.trim() || "",
-        city: f.city.trim(),
-        state: f.state.trim(),
-        pin: f.pin.trim(),
-      });
+      recordCustomerOrder(
+        result.ref,
+        {
+          fullName: f.fullName.trim(),
+          mobile: f.mobile.trim(),
+          email: f.email?.trim() || "",
+          house: f.house.trim(),
+          street: f.street.trim(),
+          landmark: f.landmark?.trim() || "",
+          city: f.city.trim(),
+          state: f.state.trim(),
+          pin: f.pin.trim(),
+        },
+        {
+          ref: result.ref,
+          status: result.status || "pending",
+          createdAt: new Date().toISOString(),
+          product: {
+            slug: p.slug,
+            name: p.name,
+            image: (p.images && p.images[0]) || "",
+            unitPrice: p.price,
+            shippingCharge: p.shippingCharge ?? 49,
+          },
+          size: f.size || undefined,
+          color: f.color,
+          quantity: Number(f.quantity) || 1,
+          itemTotal: p.price * (Number(f.quantity) || 1),
+          shipping: p.shippingCharge ?? 49,
+          grandTotal: orderTotal(p, Number(f.quantity) || 1),
+          paymentMode: "COD",
+          customer: {
+            fullName: f.fullName.trim(),
+            mobile: f.mobile.trim(),
+            email: f.email?.trim() || "",
+            address: {
+              house: f.house.trim(),
+              street: f.street.trim(),
+              landmark: f.landmark?.trim() || "",
+              city: f.city.trim(),
+              state: f.state.trim(),
+              pin: f.pin.trim(),
+            },
+          },
+          statusHistory: [
+            {
+              status: "pending",
+              timestamp: new Date().toISOString(),
+              note: "Order request received. Delivery details are being verified.",
+            },
+          ],
+        }
+      );
       onSubmitted(f, result.ref);
     } catch (err: any) {
       console.error("Order submission network error:", err);

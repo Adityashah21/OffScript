@@ -99,7 +99,61 @@ export function updateCustomerProfile(data: Partial<CustomerProfile>) {
   return updated;
 }
 
-export function recordCustomerOrder(ref: string, details?: Partial<CustomerProfile>) {
+export interface StoredOrder {
+  ref: string;
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled" | "rto";
+  createdAt: string;
+  updatedAt?: string;
+  product: {
+    productId?: string;
+    slug: string;
+    name: string;
+    image: string;
+    unitPrice: number;
+    shippingCharge?: number;
+  };
+  size?: string;
+  color: string;
+  quantity: number;
+  itemTotal: number;
+  shipping: number;
+  grandTotal: number;
+  paymentMode: string;
+  customer: {
+    fullName: string;
+    mobile: string;
+    email?: string;
+    address: {
+      house: string;
+      street: string;
+      landmark?: string;
+      city: string;
+      state: string;
+      pin: string;
+    };
+  };
+  statusHistory?: Array<{
+    status: string;
+    timestamp: string;
+    note?: string;
+  }>;
+}
+
+export const storedOrders = createStore<StoredOrder[]>("offscript:stored_orders", []);
+
+export function saveStoredOrder(order: StoredOrder) {
+  const current = storedOrders.read();
+  const filtered = current.filter((o) => o.ref !== order.ref);
+  const updated = [order, ...filtered];
+  storedOrders.write(updated);
+  return updated;
+}
+
+export function recordCustomerOrder(
+  ref: string,
+  details?: Partial<CustomerProfile>,
+  fullOrder?: StoredOrder
+) {
   const current = customerProfile.read();
   const nextRefs = Array.from(new Set([ref, ...(current.orderRefs || [])]));
   const updated: CustomerProfile = {
@@ -108,5 +162,10 @@ export function recordCustomerOrder(ref: string, details?: Partial<CustomerProfi
     orderRefs: nextRefs,
   };
   customerProfile.write(updated);
+
+  if (fullOrder) {
+    saveStoredOrder(fullOrder);
+  }
+
   return updated;
 }

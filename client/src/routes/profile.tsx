@@ -20,7 +20,14 @@ import {
   Check,
   Building,
 } from "lucide-react";
-import { customerProfile, updateCustomerProfile, wishlist, type CustomerProfile } from "@/lib/store";
+import {
+  customerProfile,
+  updateCustomerProfile,
+  wishlist,
+  storedOrders,
+  type CustomerProfile,
+  type StoredOrder,
+} from "@/lib/store";
 import { inr, formatDate } from "@/lib/format";
 import { seo } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -93,11 +100,14 @@ function getApiUrl(): string {
 export function ProfilePage() {
   const profile = customerProfile.use();
   const savedWishlist = wishlist.use();
+  const localStoredOrders = storedOrders.use();
 
   const [activeTab, setActiveTab] = useState<"orders" | "address" | "lookup">("orders");
   const [orders, setOrders] = useState<OrderTrackItem[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
+
+  const displayOrders = orders.length > 0 ? orders : (localStoredOrders as unknown as OrderTrackItem[]);
 
   // Address edit state
   const [editAddress, setEditAddress] = useState<CustomerProfile>({ ...profile });
@@ -135,7 +145,7 @@ export function ProfilePage() {
 
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.orders)) {
+        if (Array.isArray(data.orders) && data.orders.length > 0) {
           setOrders(data.orders);
 
           // If customer details were returned from DB and local profile is bare, sync them
@@ -154,8 +164,8 @@ export function ProfilePage() {
           }
         }
       }
-    } catch (err) {
-      console.warn("Could not load live order history:", err);
+    } catch {
+      // Graceful fallback to local stored orders
     } finally {
       setLoadingOrders(false);
     }
@@ -183,6 +193,13 @@ export function ProfilePage() {
         body: JSON.stringify(isRef ? { ref: query } : { mobile: query }),
       });
 
+      if (res.status === 404) {
+        setLookupError(
+          "The backend service is currently deploying the latest order tracking version on Render. If you deployed recently, please allow 1-2 minutes for Render to finish, or click 'Deploy latest commit' in your Render dashboard."
+        );
+        return;
+      }
+
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -192,7 +209,7 @@ export function ProfilePage() {
       if (!data.orders || data.orders.length === 0) {
         setLookupError(
           isRef
-            ? `No order found with reference "${query}". Please check the spelling.`
+            ? `No order found with reference "${query}". Please check the reference code.`
             : `No orders found for mobile "${query}". Place an order request to see it here.`
         );
       } else {
@@ -271,7 +288,7 @@ export function ProfilePage() {
               <span>{hasIdentity ? "Switch Phone / Sync" : "Sync Phone Number"}</span>
             </button>
 
-            {orders.length > 0 && (
+            {displayOrders.length > 0 && (
               <button
                 onClick={() => fetchOrders(profile.mobile, profile.orderRefs?.[0])}
                 disabled={loadingOrders}
@@ -300,9 +317,9 @@ export function ProfilePage() {
           >
             <Package className="h-4 w-4" />
             <span>Orders & Tracking</span>
-            {orders.length > 0 && (
+            {displayOrders.length > 0 && (
               <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-bold text-accent">
-                {orders.length}
+                {displayOrders.length}
               </span>
             )}
           </button>
@@ -338,14 +355,14 @@ export function ProfilePage() {
       {/* Tab 1: Orders & Tracking */}
       {activeTab === "orders" && (
         <div className="mt-8 space-y-8">
-          {loadingOrders && orders.length === 0 ? (
+          {loadingOrders && displayOrders.length === 0 ? (
             <div className="py-20 text-center">
               <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
               <p className="mt-4 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                 Checking order status...
               </p>
             </div>
-          ) : orders.length === 0 ? (
+          ) : displayOrders.length === 0 ? (
             <div className="border border-dashed p-10 text-center md:p-16">
               <Package className="mx-auto h-12 w-12 text-muted-foreground/40 stroke-1" />
               <h3 className="display-sm mt-4">No order requests yet</h3>
@@ -366,7 +383,7 @@ export function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {orders.map((ord) => (
+              {displayOrders.map((ord) => (
                 <OrderCard
                   key={ord.ref}
                   order={ord}
