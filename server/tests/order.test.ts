@@ -206,6 +206,30 @@ describe("Phase 4: Orders, Contact, Newsletter & Affiliate Tests", () => {
       expect(second.status).toBe(201);
       expect(second.body.ref).toBe(first.body.ref);
     });
+
+    it("POST /api/orders/lookup finds customer orders by mobile number", async () => {
+      const mobile = "9876500002";
+      const res = await request(app)
+        .post("/api/orders/lookup")
+        .send({ mobile });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.orders)).toBe(true);
+      expect(res.body.orders.length).toBeGreaterThan(0);
+      expect(res.body.customer.mobile).toBe(mobile);
+      expect(res.body.customer.fullName).toBe("Asha Rao");
+    });
+
+    it("GET /api/orders/track/:ref returns public tracking information", async () => {
+      const order = await Order.findOne();
+      expect(order).toBeDefined();
+
+      const res = await request(app).get(`/api/orders/track/${order!.ref}`);
+      expect(res.status).toBe(200);
+      expect(res.body.ref).toBe(order!.ref);
+      expect(res.body.status).toBe(order!.status);
+      expect(res.body.product.name).toBe(order!.product.name);
+    });
   });
 
   describe("Contact & Newsletter Endpoints", () => {

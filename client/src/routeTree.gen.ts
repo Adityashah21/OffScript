@@ -19,6 +19,7 @@ import { Route as FaqRouteImport } from './routes/faq'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MenRouteImport } from './routes/men'
 import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as StreetwearRouteImport } from './routes/streetwear'
 import { Route as Under999RouteImport } from './routes/under-999'
 import { Route as WishlistRouteImport } from './routes/wishlist'
@@ -78,6 +79,11 @@ const MenRoute = MenRouteImport.update({
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StreetwearRoute = StreetwearRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/men': typeof MenRoute
   '/orders': typeof OrdersRoute
+  '/profile': typeof ProfileRoute
   '/streetwear': typeof StreetwearRoute
   '/under-999': typeof Under999Route
   '/wishlist': typeof WishlistRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/men': typeof MenRoute
   '/orders': typeof OrdersRoute
+  '/profile': typeof ProfileRoute
   '/streetwear': typeof StreetwearRoute
   '/under-999': typeof Under999Route
   '/wishlist': typeof WishlistRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/men': typeof MenRoute
   '/orders': typeof OrdersRoute
+  '/profile': typeof ProfileRoute
   '/streetwear': typeof StreetwearRoute
   '/under-999': typeof Under999Route
   '/wishlist': typeof WishlistRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/men'
     | '/orders'
+    | '/profile'
     | '/streetwear'
     | '/under-999'
     | '/wishlist'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/men'
     | '/orders'
+    | '/profile'
     | '/streetwear'
     | '/under-999'
     | '/wishlist'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/men'
     | '/orders'
+    | '/profile'
     | '/streetwear'
     | '/under-999'
     | '/wishlist'
@@ -278,6 +290,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MenRoute: typeof MenRoute
   OrdersRoute: typeof OrdersRoute
+  ProfileRoute: typeof ProfileRoute
   StreetwearRoute: typeof StreetwearRoute
   Under999Route: typeof Under999Route
   WishlistRoute: typeof WishlistRoute
@@ -360,6 +373,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/streetwear': {
@@ -446,6 +466,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MenRoute: MenRoute,
   OrdersRoute: OrdersRoute,
+  ProfileRoute: ProfileRoute,
   StreetwearRoute: StreetwearRoute,
   Under999Route: Under999Route,
   WishlistRoute: WishlistRoute,

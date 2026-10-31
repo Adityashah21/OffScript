@@ -57,3 +57,56 @@ export function captureAttribution(search: Record<string, unknown>, landing: str
   for (const k of UTM) if (typeof search[k] === "string") found[k] = search[k] as string;
   if (Object.keys(found).length) attribution.write({ ...found, landing, capturedAt: new Date().toISOString() });
 }
+
+export interface CustomerProfile {
+  fullName: string;
+  mobile: string;
+  email: string;
+  house: string;
+  street: string;
+  landmark: string;
+  city: string;
+  state: string;
+  pin: string;
+  orderRefs: string[];
+}
+
+export const DEFAULT_CUSTOMER_PROFILE: CustomerProfile = {
+  fullName: "",
+  mobile: "",
+  email: "",
+  house: "",
+  street: "",
+  landmark: "",
+  city: "",
+  state: "",
+  pin: "",
+  orderRefs: [],
+};
+
+export const customerProfile = createStore<CustomerProfile>("offscript:customer_profile", DEFAULT_CUSTOMER_PROFILE);
+
+export function updateCustomerProfile(data: Partial<CustomerProfile>) {
+  const current = customerProfile.read();
+  const updated: CustomerProfile = {
+    ...current,
+    ...data,
+    orderRefs: data.orderRefs
+      ? Array.from(new Set([...(data.orderRefs || []), ...(current.orderRefs || [])]))
+      : current.orderRefs,
+  };
+  customerProfile.write(updated);
+  return updated;
+}
+
+export function recordCustomerOrder(ref: string, details?: Partial<CustomerProfile>) {
+  const current = customerProfile.read();
+  const nextRefs = Array.from(new Set([ref, ...(current.orderRefs || [])]));
+  const updated: CustomerProfile = {
+    ...current,
+    ...(details || {}),
+    orderRefs: nextRefs,
+  };
+  customerProfile.write(updated);
+  return updated;
+}

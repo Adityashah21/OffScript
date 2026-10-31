@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, Menu, Search, X } from "lucide-react";
+import { Heart, Menu, Search, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription, SheetClose } from "@/components/ui/sheet";
 import { SearchOverlay } from "./SearchOverlay";
-import { wishlist } from "@/lib/store";
+import { wishlist, customerProfile } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 export const NAV = [
@@ -30,6 +30,7 @@ export function SiteHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const saved = wishlist.use();
+  const profile = customerProfile.use();
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 24);
@@ -65,7 +66,7 @@ export function SiteHeader() {
               ))}
             </ul>
           </nav>
-          <div className="flex items-center">
+          <div className="flex items-center gap-1">
             <button onClick={() => setSearchOpen(true)} aria-label="Search" className="inline-flex h-11 w-11 items-center justify-center hover:text-accent">
               <Search className="h-5 w-5" strokeWidth={1.5} />
             </button>
@@ -75,6 +76,12 @@ export function SiteHeader() {
                 <span className="absolute right-1 top-1.5 flex h-4 min-w-4 items-center justify-center bg-accent px-1 text-[10px] font-bold text-accent-foreground">
                   {saved.length}
                 </span>
+              )}
+            </Link>
+            <Link to="/profile" aria-label="My Profile and Orders" className="relative inline-flex h-11 w-11 items-center justify-center hover:text-accent" title="My Profile & Orders">
+              <User className="h-5 w-5" strokeWidth={1.5} />
+              {profile.orderRefs?.length > 0 && (
+                <span className="absolute right-1.5 top-2 h-2 w-2 rounded-full bg-accent" />
               )}
             </Link>
             <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="inline-flex h-11 w-11 items-center justify-center lg:hidden">
@@ -106,7 +113,22 @@ export function SiteHeader() {
                 </li>
               ))}
             </ul>
-            <div className="mt-8 grid grid-cols-2 gap-6 text-sm">
+            <div className="my-6 border-y py-4">
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 py-1 text-lg font-semibold"
+              >
+                <User className="h-5 w-5 text-accent" />
+                <span>My Profile & Orders</span>
+                {profile.orderRefs?.length > 0 && (
+                  <span className="ml-auto rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-accent-foreground">
+                    {profile.orderRefs.length}
+                  </span>
+                )}
+              </Link>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-6 text-sm">
               <div className="space-y-2">
                 <p className="eyebrow text-muted-foreground">Edits</p>
                 <MenuLink slug="new-arrivals" label="Latest drops" close={() => setMenuOpen(false)} />

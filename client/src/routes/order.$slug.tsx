@@ -5,6 +5,7 @@ import { inr } from "@/lib/format";
 import { isCodEligible, MAX_QTY, mockOrderRef, orderTotal, validateOrder, type OrderInput } from "@/lib/order";
 import { seo } from "@/lib/seo";
 import { cn } from "@/lib/utils";
+import { customerProfile, recordCustomerOrder } from "@/lib/store";
 
 export const Route = createFileRoute("/order/$slug")({
   validateSearch: (s: Record<string, unknown>) => ({ size: typeof s["size"] === "string" ? (s["size"] as string) : undefined }),
@@ -59,10 +60,22 @@ function CODOrderForm({
   initialSize?: string | undefined;
   onSubmitted: (f: OrderInput, ref?: string) => void;
 }) {
+  const savedProfile = customerProfile.read();
   const [f, setF] = useState<OrderInput>({
-    fullName: "", mobile: "", email: "", house: "", street: "", landmark: "", city: "", state: "", pin: "",
+    fullName: savedProfile.fullName || "",
+    mobile: savedProfile.mobile || "",
+    email: savedProfile.email || "",
+    house: savedProfile.house || "",
+    street: savedProfile.street || "",
+    landmark: savedProfile.landmark || "",
+    city: savedProfile.city || "",
+    state: savedProfile.state || "",
+    pin: savedProfile.pin || "",
     size: initialSize && p.availableSizes.includes(initialSize) ? initialSize : "",
-    color: p.availableColors[0] ?? "", quantity: 1, instructions: "", confirmed: false,
+    color: p.availableColors[0] ?? "",
+    quantity: 1,
+    instructions: "",
+    confirmed: false,
   });
   const [errors, setErrors] = useState<ReturnType<typeof validateOrder>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -133,6 +146,17 @@ function CODOrderForm({
       }
 
       const result = await response.json();
+      recordCustomerOrder(result.ref, {
+        fullName: f.fullName.trim(),
+        mobile: f.mobile.trim(),
+        email: f.email?.trim() || "",
+        house: f.house.trim(),
+        street: f.street.trim(),
+        landmark: f.landmark?.trim() || "",
+        city: f.city.trim(),
+        state: f.state.trim(),
+        pin: f.pin.trim(),
+      });
       onSubmitted(f, result.ref);
     } catch (err: any) {
       console.error("Order submission network error:", err);
@@ -277,7 +301,8 @@ function OrderConfirmation({ product: p, orderRef, form }: { product: Product; o
         </div>
       </div>
       <div className="mt-12 flex flex-wrap gap-3">
-        <Link to="/collections/$slug" params={{ slug: "discover" }} className="btn-ink">Keep discovering</Link>
+        <Link to="/profile" className="btn-ink">View in My Profile & Orders →</Link>
+        <Link to="/collections/$slug" params={{ slug: "discover" }} className="btn-outline">Keep discovering</Link>
         <Link to="/product/$slug" params={{ slug: p.slug }} className="btn-outline">Back to the piece</Link>
       </div>
     </div>

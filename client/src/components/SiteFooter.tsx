@@ -34,6 +34,7 @@ export function SiteFooter() {
             ))}
           </FooterCol>
           <FooterCol title="Information">
+            <Link to="/profile" className="link-underline font-medium text-accent">My Orders & Profile</Link>
             <Link to="/about" className="link-underline">About Us</Link>
             <Link to="/faq" className="link-underline">How It Works</Link>
             <Link to="/contact" className="link-underline">Contact</Link>
