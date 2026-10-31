@@ -38,10 +38,27 @@ function OrderPage() {
     );
   }
   if (done) return <OrderConfirmation product={p} orderRef={done.ref} form={done.form} />;
-  return <CODOrderForm product={p} initialSize={size} onSubmitted={(form) => { setDone({ ref: mockOrderRef(), form }); window.scrollTo(0, 0); }} />;
+  return (
+    <CODOrderForm
+      product={p}
+      initialSize={size}
+      onSubmitted={(form, realRef) => {
+        setDone({ ref: realRef || mockOrderRef(), form });
+        window.scrollTo(0, 0);
+      }}
+    />
+  );
 }
 
-function CODOrderForm({ product: p, initialSize, onSubmitted }: { product: Product; initialSize?: string | undefined; onSubmitted: (f: OrderInput) => void }) {
+function CODOrderForm({
+  product: p,
+  initialSize,
+  onSubmitted,
+}: {
+  product: Product;
+  initialSize?: string | undefined;
+  onSubmitted: (f: OrderInput, ref?: string) => void;
+}) {
   const [f, setF] = useState<OrderInput>({
     fullName: "", mobile: "", email: "", house: "", street: "", landmark: "", city: "", state: "", pin: "",
     size: initialSize && p.availableSizes.includes(initialSize) ? initialSize : "",
@@ -51,7 +68,7 @@ function CODOrderForm({ product: p, initialSize, onSubmitted }: { product: Produ
   const [submitting, setSubmitting] = useState(false);
   const set = <K extends keyof OrderInput>(k: K, v: OrderInput[K]) => setF((x) => ({ ...x, [k]: v }));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validateOrder(p, f);
     setErrors(errs);
@@ -60,7 +77,59 @@ function CODOrderForm({ product: p, initialSize, onSubmitted }: { product: Produ
       return;
     }
     setSubmitting(true);
-    setTimeout(() => onSubmitted(f), 700);
+
+    try {
+      const API_URL =
+        import.meta.env.VITE_API_URL ||
+        (typeof window !== "undefined" && window.location.hostname === "localhost"
+          ? "http://localhost:5001"
+          : "https://offscript-p9rk.onrender.com");
+
+      const response = await fetch(`${API_URL}/api/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productSlug: p.slug,
+          fullName: f.fullName.trim(),
+          mobile: f.mobile.trim(),
+          email: f.email?.trim() || undefined,
+          house: f.house.trim(),
+          street: f.street.trim(),
+          landmark: f.landmark?.trim() || undefined,
+          city: f.city.trim(),
+          state: f.state.trim(),
+          pin: f.pin.trim(),
+          size: f.size || undefined,
+          color: f.color.trim(),
+          quantity: Number(f.quantity) || 1,
+          instructions: f.instructions?.trim() || undefined,
+          confirmed: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const message =
+          errorData.message ||
+          (errorData.details && errorData.details[0]?.message) ||
+          "Failed to place order request. Please check your information.";
+        setErrors((prev) => ({ ...prev, product: message }));
+        setSubmitting(false);
+        return;
+      }
+
+      const result = await response.json();
+      onSubmitted(f, result.ref);
+    } catch (err: any) {
+      console.error("Order submission network error:", err);
+      setErrors((prev) => ({
+        ...prev,
+        product: "Connection error: Unable to submit order to the server. Please check your connection and try again.",
+      }));
+      setSubmitting(false);
+    }
   };
 
   const field = (k: keyof OrderInput, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}, optional = false) => (
@@ -174,9 +243,9 @@ function CODOrderForm({ product: p, initialSize, onSubmitted }: { product: Produ
 function OrderConfirmation({ product: p, orderRef, form }: { product: Product; orderRef: string; form: OrderInput }) {
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 md:py-24">
-      <p className="eyebrow text-accent">Demo reference · {orderRef}</p>
+      <p className="eyebrow text-accent">Order reference · {orderRef}</p>
       <h1 className="display-xl mt-4 uppercase">Your request<br />is in.</h1>
-      <p className="mt-5 max-w-lg text-muted-foreground">Your order request has been recorded in this demo. No supplier has been contacted, and nothing will be shipped.</p>
+      <p className="mt-5 max-w-lg text-muted-foreground">Your order request has been received. Our team will verify your delivery details before dispatching.</p>
       <div className="mt-10 grid gap-8 border-t border-foreground pt-8 sm:grid-cols-[120px_1fr]">
         <img src={p.images[0]} alt={p.name} className="aspect-[4/5] w-full object-cover" />
         <div className="space-y-5 text-sm">

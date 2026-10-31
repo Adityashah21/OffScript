@@ -4,6 +4,8 @@ import { Order, type IOrderDocument } from "../models/Order.js";
 import { INDIAN_STATES, type CreateOrderInput } from "../schemas/order.schema.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { notifyNewOrder } from "./notify.js";
+import { getSeedProducts } from "../scripts/seedData.js";
+import { env } from "../config/env.js";
 
 export const MAX_QTY = 5;
 
@@ -67,7 +69,15 @@ export async function processOrderRequest(
   }
 
   // 3. Load product
-  const product = await Product.findOne({ slug: input.productSlug });
+  let product = await Product.findOne({ slug: input.productSlug });
+  if (!product) {
+    // Fallback: check seed products so that default catalog pieces are never missing
+    const seedProducts = getSeedProducts(env.PUBLIC_BASE_URL);
+    const foundSeed = seedProducts.find((p) => p.slug === input.productSlug);
+    if (foundSeed) {
+      product = await Product.create(foundSeed);
+    }
+  }
   if (!product) {
     throw new AppError(404, "PRODUCT_NOT_FOUND", "Piece not found");
   }

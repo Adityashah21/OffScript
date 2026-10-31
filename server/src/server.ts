@@ -2,6 +2,8 @@ import { createApp } from "./app.js";
 import { connectDB } from "./config/db.js";
 import { env } from "./config/env.js";
 import { createAdmin } from "./scripts/createAdmin.js";
+import { Product } from "./models/Product.js";
+import { seed } from "./scripts/seed.js";
 
 async function bootstrap() {
   try {
@@ -10,6 +12,13 @@ async function bootstrap() {
 
     // Automatically ensure admin user exists in MongoDB on server start
     await createAdmin();
+
+    // Auto-seed initial catalog if MongoDB has no products yet
+    const productCount = await Product.countDocuments();
+    if (productCount === 0) {
+      console.log("Database has 0 products. Auto-seeding initial catalog...");
+      await seed();
+    }
 
     const app = createApp();
 
