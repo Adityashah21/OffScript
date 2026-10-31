@@ -68,17 +68,44 @@ adminAiRouter.post("/verify-key", async (req: Request, res: Response) => {
   try {
     const { GoogleGenAI } = await import("@google/genai");
     const ai = new GoogleGenAI({ apiKey: key });
-    const testRes = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: [{ role: "user", parts: [{ text: "ping" }] }],
-    });
-    if (testRes.text) {
+
+    const candidateModels = [
+      "gemini-flash-latest",
+      "gemini-3.8-flash",
+      "gemini-2.5-flash",
+      "gemini-1.5-flash",
+    ];
+    let verified = false;
+
+    for (const m of candidateModels) {
+      try {
+        const testRes = await ai.models.generateContent({
+          model: m,
+          contents: [{ role: "user", parts: [{ text: "ping" }] }],
+        });
+        if (testRes?.text) {
+          verified = true;
+          break;
+        }
+      } catch {
+        // continue
+      }
+    }
+
+    if (verified) {
       return res.json({
         valid: true,
         message: "Gemini API connection verified! Ready for AI model synthesis.",
       });
     }
-    return res.json({ valid: true, message: "Gemini key accepted." });
+
+    // Fallback: test if model list succeeds
+    const list = await ai.models.list();
+    if (list) {
+      return res.json({ valid: true, message: "Gemini API key validated successfully." });
+    }
+
+    return res.status(400).json({ valid: false, error: "Gemini key could not be verified" });
   } catch (err: any) {
     return res.status(400).json({
       valid: false,

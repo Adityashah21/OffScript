@@ -187,11 +187,28 @@ Format strictly as JSON:
   "detail": "prompt..."
 }`,
                 });
-                const visionResponse = await ai.models.generateContent({
-                    model: "gemini-2.0-flash",
-                    contents: [{ role: "user", parts: contentParts }],
-                });
-                const textOutput = visionResponse.text || "";
+                let visionResponse = null;
+                const candidateVisionModels = [
+                    "gemini-flash-latest",
+                    "gemini-3.8-flash",
+                    "gemini-2.5-flash",
+                    "gemini-1.5-flash",
+                    "gemini-2.0-flash",
+                ];
+                for (const m of candidateVisionModels) {
+                    try {
+                        visionResponse = await ai.models.generateContent({
+                            model: m,
+                            contents: [{ role: "user", parts: contentParts }],
+                        });
+                        if (visionResponse?.text)
+                            break;
+                    }
+                    catch {
+                        // try next model
+                    }
+                }
+                const textOutput = visionResponse?.text || "";
                 const jsonMatch = textOutput.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
                     analyzedPrompts = JSON.parse(jsonMatch[0]);
