@@ -216,7 +216,12 @@ export const AppShell: React.FC = () => {
       <aside className="hidden md:flex flex-col w-60 border-r bg-card shrink-0 min-h-screen sticky top-0 h-screen">
         <div className="p-5 border-b flex items-center justify-between">
           <div>
-            <div className="font-mono text-lg font-bold tracking-widest uppercase">OFFSCRIPT</div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-lg font-bold tracking-widest uppercase">OFFSCRIPT</span>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-semibold">
+                AI ACTIVE
+              </span>
+            </div>
             <div className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
               Admin Console
             </div>
