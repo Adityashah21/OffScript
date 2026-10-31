@@ -1,10 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import cover from "@/assets/cover.jpg";
 import hero from "@/assets/hero.jpg";
 import campaign from "@/assets/campaign.jpg";
-import { getProduct, products } from "@/data/products";
+import {
+  getProduct,
+  getAllProducts,
+  getLiveUploadedProducts,
+  fetchLiveProducts,
+  subscribeProducts,
+  type Product,
+} from "@/data/products";
 import { getCollection, moods, productsIn } from "@/data/collections";
 import { NewsletterForm } from "@/components/Editorial";
 import { ProductCard } from "@/components/ProductCard";
@@ -23,23 +30,34 @@ const col = (s: string) => getCollection(s)!;
 const prod = (s: string) => getProduct(s)!;
 
 function Home() {
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    fetchLiveProducts().then(() => setTick((t) => t + 1));
+    return subscribeProducts(() => setTick((t) => t + 1));
+  }, []);
+
   return (
     <>
       <CoverHero />
       <Ticker />
-      <FindsWall />
-      <MoodPicker />
-      <Spotlights />
+      <FindsWall key={`wall-${tick}`} />
+      <MoodPicker key={`mood-${tick}`} />
+      <Spotlights key={`spot-${tick}`} />
       <RadarRail slugs={["oversized-tees", "coffee-date", "clean-fit", "college-core", "monochrome", "sneaker-edit", "travel-fits"]} />
-      <BudgetEdit />
-      <CampaignSpotlight />
-      <Archive />
+      <BudgetEdit key={`budget-${tick}`} />
+      <CampaignSpotlight key={`campaign-${tick}`} />
+      <Archive key={`archive-${tick}`} />
       <Newsletter />
     </>
   );
 }
 
 function CoverHero() {
+  const live = getLiveUploadedProducts();
+  const all = getAllProducts();
+  const heroDropName = live[0]?.name || all[0]?.name || "wide trousers, leather, a white tee";
+
   return (
     <section className="relative isolate overflow-hidden bg-foreground text-paper">
       <img src={cover} alt="Model in an oversized leather jacket on a sunlit Kolkata street" width={1920} height={1088} className="reveal-img absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center]" />
@@ -67,7 +85,7 @@ function CoverHero() {
           </div>
         </div>
         <div className="eyebrow mt-8 flex justify-between border-t border-paper/30 pt-3 opacity-80">
-          <span>On the cover: wide trousers, leather, a white tee</span>
+          <span>On the cover: {heroDropName}</span>
           <span className="hidden md:inline">↓ The Finds Wall</span>
         </div>
       </div>
@@ -99,10 +117,15 @@ function Ticker() {
 }
 
 function FindsWall() {
-  const tee = prod("washed-black-oversized-tee");
-  const sneak = prod("minimal-everyday-sneakers");
-  const knit = prod("textured-knit-top");
-  const bag = prod("everyday-shoulder-bag");
+  const all = getAllProducts();
+  const live = getLiveUploadedProducts();
+
+  // User uploaded products take top priority on the wall
+  const p1 = live[0] || prod("washed-black-oversized-tee") || all[0];
+  const p2 = live[1] || prod("minimal-everyday-sneakers") || all[1] || p1;
+  const p3 = live[2] || prod("textured-knit-top") || all[2] || p1;
+  const p4 = live[3] || prod("everyday-shoulder-bag") || all[3] || p1;
+
   return (
     <section aria-labelledby="wall" className="mx-auto max-w-[1600px] px-5 pt-20 md:px-10">
       <div className="grid gap-6 md:grid-cols-12">
@@ -114,22 +137,22 @@ function FindsWall() {
       </div>
       <div className="mt-10 grid auto-rows-[minmax(0,auto)] grid-cols-2 gap-3 md:grid-cols-12 md:gap-4">
         <WallImage to={{ slug: "streetwear" }} img={col("streetwear").image} label="Streetwear" caption="Collection" className="col-span-2 aspect-[4/3] md:col-span-7 md:row-span-2 md:aspect-auto" />
-        <WallProduct p={tee} className="md:col-span-3" />
+        <WallProduct p={p1} className="md:col-span-3" />
         <div className="col-span-1 flex flex-col justify-between bg-foreground p-5 text-background md:col-span-2">
           <p className="eyebrow opacity-60">Note</p>
           <p className="font-display text-2xl leading-tight md:text-3xl">"Buy less. Wear it more."</p>
           <p className="eyebrow opacity-60">— The edit</p>
         </div>
-        <WallProduct p={sneak} className="md:col-span-2" />
+        <WallProduct p={p2} className="md:col-span-2" />
         <WallImage to={{ slug: "her-rotation" }} img={col("her-rotation").image} label="Her Rotation" caption="Collection" className="col-span-1 aspect-[3/4] md:col-span-3" />
-        <WallProduct p={knit} className="md:col-span-3" />
+        <WallProduct p={p3} className="md:col-span-3" />
         <Link to="/collections/$slug" params={{ slug: "new-arrivals" }} className="group col-span-1 flex flex-col justify-between border border-foreground p-5 md:col-span-3">
           <span className="eyebrow">Just in</span>
           <span className="font-display text-5xl leading-none md:text-6xl">{productsIn("new-arrivals").length}<br /><span className="text-2xl">new finds</span></span>
           <ArrowUpRight className="h-6 w-6 self-end transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
         </Link>
         <WallImage to={{ slug: "his-rotation" }} img={col("his-rotation").image} label="His Rotation" caption="Collection" className="col-span-1 aspect-[4/5] md:col-span-3" />
-        <WallProduct p={bag} className="md:col-span-3" />
+        <WallProduct p={p4} className="md:col-span-3" />
       </div>
     </section>
   );
@@ -201,13 +224,20 @@ function MoodPicker() {
 }
 
 function Spotlights() {
+  const all = getAllProducts();
+  const live = getLiveUploadedProducts();
+  const s1 = live[0] || prod("black-slip-midi-dress") || all[0];
+  const s2 = live[1] || prod("olive-overshirt") || (all.length > 1 ? all[1] : s1);
+
+  if (!s1) return null;
+
   return (
     <section aria-labelledby="spot" className="mx-auto max-w-[1600px] px-5 pt-28 md:px-10">
       <p className="eyebrow text-accent">Section 03</p>
       <h2 id="spot" className="display-lg mt-3 uppercase">Worth the<br />spotlight.</h2>
       <div className="mt-14 space-y-24">
-        <ProductSpotlight product={prod("black-slip-midi-dress")} index="01" />
-        <ProductSpotlight product={prod("olive-overshirt")} index="02" reverse />
+        <ProductSpotlight product={s1} index="01" />
+        {s2 && s2.id !== s1.id && <ProductSpotlight product={s2} index="02" reverse />}
       </div>
     </section>
   );
@@ -262,7 +292,8 @@ function CampaignSpotlight() {
 }
 
 function Archive() {
-  const list = [...products].sort((a, b) => a.price - b.price);
+  const all = getAllProducts();
+  const list = [...all].sort((a, b) => a.price - b.price);
   return (
     <section aria-labelledby="archive" className="bg-foreground py-20 text-background">
       <div className="mx-auto grid max-w-[1600px] gap-10 px-5 md:grid-cols-12 md:px-10">

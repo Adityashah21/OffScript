@@ -443,15 +443,21 @@ if (typeof window !== "undefined") {
   } catch {}
 }
 
+export function getLiveUploadedProducts(): Product[] {
+  return liveProducts;
+}
+
 export function getAllProducts(): Product[] {
   const map = new Map<string, Product>();
-  // 1. Seed products first
-  for (const p of products) {
-    map.set(p.slug.toLowerCase(), p);
-  }
-  // 2. Live database products (these override seed products or add newly created ones)
+  // 1. Live database products FIRST (user uploaded products take top priority)
   for (const p of liveProducts) {
     map.set(p.slug.toLowerCase(), p);
+  }
+  // 2. Add seed products as graceful fallback so UI layout is never broken
+  for (const p of products) {
+    if (!map.has(p.slug.toLowerCase())) {
+      map.set(p.slug.toLowerCase(), p);
+    }
   }
   return Array.from(map.values());
 }
