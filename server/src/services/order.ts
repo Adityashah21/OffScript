@@ -71,11 +71,23 @@ export async function processOrderRequest(
   // 3. Load product
   let product = await Product.findOne({ slug: input.productSlug });
   if (!product) {
+    // Case-insensitive fallback
+    product = await Product.findOne({
+      slug: new RegExp(`^${input.productSlug.trim()}$`, "i"),
+    });
+  }
+  if (!product) {
     // Fallback: check seed products so that default catalog pieces are never missing
     const seedProducts = getSeedProducts(env.PUBLIC_BASE_URL);
-    const foundSeed = seedProducts.find((p) => p.slug === input.productSlug);
+    const foundSeed = seedProducts.find(
+      (p) => p.slug.toLowerCase() === input.productSlug.trim().toLowerCase()
+    );
     if (foundSeed) {
-      product = await Product.create(foundSeed);
+      product = await Product.findOneAndUpdate(
+        { slug: foundSeed.slug },
+        { $setOnInsert: foundSeed },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
     }
   }
   if (!product) {
@@ -195,12 +207,12 @@ export async function processOrderRequest(
   const orderDoc: IOrderDocument = new Order({
     ref,
     product: {
-      productId: product.id,
+      productId: String(product.id || (product as any)._id || product.slug),
       slug: product.slug,
       name: product.name,
-      image: product.images[0] || "",
+      image: (product.images && product.images[0]) || "",
       unitPrice: product.price,
-      shippingCharge: product.shippingCharge,
+      shippingCharge: product.shippingCharge ?? 0,
     },
     customer: {
       fullName: input.fullName.trim(),

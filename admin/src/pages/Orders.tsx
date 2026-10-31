@@ -80,21 +80,22 @@ export const Orders: React.FC = () => {
     refetchInterval: 30000, // 30s polling
   });
 
-  const orders: Order[] = data?.data || [];
-  const meta = data?.meta;
+  const orders: Order[] = (data as any)?.items || (data as any)?.data || [];
+  const meta = (data as any)?.meta;
   const statusCounts = meta?.statusCounts || {};
-  const totalOrdersCount = meta?.total ?? 0;
-  const totalPages = meta?.pages ?? 1;
+  const totalOrdersCount = (data as any)?.total ?? meta?.total ?? orders.length;
+  const totalPages = (data as any)?.total ? Math.ceil((data as any).total / limit) : (meta?.pages ?? 1);
 
   // Compute product-filtered orders client-side if product filter specified
   const filteredOrders = useMemo(() => {
     if (!productFilter.trim()) return orders;
     const filter = productFilter.toLowerCase().trim();
     return orders.filter((order: Order) =>
+      Array.isArray(order.items) &&
       order.items.some(
         (item) =>
-          item.title.toLowerCase().includes(filter) ||
-          item.brand.toLowerCase().includes(filter)
+          item.title?.toLowerCase().includes(filter) ||
+          item.brand?.toLowerCase().includes(filter)
       )
     );
   }, [orders, productFilter]);
@@ -448,43 +449,45 @@ export const Orders: React.FC = () => {
                       </td>
 
                       <td className="p-3">
-                        <div className="font-medium text-foreground">{order.customer.name}</div>
+                        <div className="font-medium text-foreground">{order.customer?.name || (order.customer as any)?.fullName || 'Customer'}</div>
                         <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <span>{order.customer.phone}</span>
-                          <a
-                            href={getWhatsAppLink(order.customer.phone)}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-emerald-600 hover:text-emerald-700 ml-1"
-                            title="Chat on WhatsApp"
-                          >
-                            <MessageCircle className="h-3.5 w-3.5" />
-                          </a>
+                          <span>{order.customer?.phone || (order.customer as any)?.mobile || ''}</span>
+                          {(order.customer?.phone || (order.customer as any)?.mobile) && (
+                            <a
+                              href={getWhatsAppLink(order.customer?.phone || (order.customer as any)?.mobile)}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-emerald-600 hover:text-emerald-700 ml-1"
+                              title="Chat on WhatsApp"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" />
+                            </a>
+                          )}
                         </div>
                       </td>
 
                       <td className="p-3 text-muted-foreground">
-                        <div className="truncate max-w-[180px]" title={order.deliveryAddress.line1}>
-                          {order.deliveryAddress.city}, {order.deliveryAddress.state}
+                        <div className="truncate max-w-[180px]" title={order.deliveryAddress?.line1 || (order.customer as any)?.address?.house || ''}>
+                          {order.deliveryAddress?.city || (order.customer as any)?.address?.city || ''}, {order.deliveryAddress?.state || (order.customer as any)?.address?.state || ''}
                         </div>
-                        <div className="font-mono text-[11px]">{order.deliveryAddress.pincode}</div>
+                        <div className="font-mono text-[11px]">{order.deliveryAddress?.pincode || (order.customer as any)?.address?.pin || ''}</div>
                       </td>
 
                       <td className="p-3">
                         <div className="max-w-[200px] truncate font-medium">
-                          {order.items[0]?.title || 'Unknown Product'}
+                          {order.items?.[0]?.title || (order as any)?.product?.name || 'Piece'}
                         </div>
                         <div className="text-[11px] text-muted-foreground">
-                          {order.items[0]?.selectedSize && `Size: ${order.items[0].selectedSize} • `}
-                          Qty: {order.items[0]?.quantity || 1}
-                          {order.items.length > 1 && ` (+${order.items.length - 1} more)`}
+                          {order.items?.[0]?.selectedSize && `Size: ${order.items[0].selectedSize} • `}
+                          Qty: {order.items?.[0]?.quantity || (order as any)?.quantity || 1}
+                          {(order.items?.length || 0) > 1 && ` (+${order.items.length - 1} more)`}
                         </div>
                       </td>
 
                       <td className="p-3 text-right">
                         <div className="font-mono font-bold text-foreground">
-                          {formatINR(order.total)}
+                          {formatINR(order.total ?? (order as any)?.grandTotal ?? 0)}
                         </div>
                         <div className="text-[10px] text-muted-foreground">COD</div>
                       </td>
@@ -559,32 +562,36 @@ export const Orders: React.FC = () => {
                   {/* Customer info */}
                   <div className="py-3 border-b space-y-1">
                     <div className="flex items-center justify-between">
-                      <div className="font-semibold text-sm">{order.customer.name}</div>
+                      <div className="font-semibold text-sm">{order.customer?.name || (order.customer as any)?.fullName || 'Customer'}</div>
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <a
-                          href={`tel:${order.customer.phone}`}
-                          className="p-1 rounded-full bg-muted text-muted-foreground hover:text-foreground"
-                          title="Call customer"
-                        >
-                          <Phone className="h-3.5 w-3.5" />
-                        </a>
-                        <a
-                          href={getWhatsAppLink(order.customer.phone)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
-                          title="WhatsApp"
-                        >
-                          <MessageCircle className="h-3.5 w-3.5" />
-                        </a>
+                        {(order.customer?.phone || (order.customer as any)?.mobile) && (
+                          <>
+                            <a
+                              href={`tel:${order.customer?.phone || (order.customer as any)?.mobile}`}
+                              className="p-1 rounded-full bg-muted text-muted-foreground hover:text-foreground"
+                              title="Call customer"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                            </a>
+                            <a
+                              href={getWhatsAppLink(order.customer?.phone || (order.customer as any)?.mobile)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                              title="WhatsApp"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" />
+                            </a>
+                          </>
+                        )}
                       </div>
                     </div>
 
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
                       <MapPin className="h-3.5 w-3.5 shrink-0" />
                       <span>
-                        {order.deliveryAddress.city}, {order.deliveryAddress.state} -{' '}
-                        {order.deliveryAddress.pincode}
+                        {order.deliveryAddress?.city || (order.customer as any)?.address?.city || ''}, {order.deliveryAddress?.state || (order.customer as any)?.address?.state || ''} -{' '}
+                        {order.deliveryAddress?.pincode || (order.customer as any)?.address?.pin || ''}
                       </span>
                     </div>
                   </div>
@@ -593,17 +600,17 @@ export const Orders: React.FC = () => {
                   <div className="pt-3 flex items-center justify-between">
                     <div>
                       <div className="text-xs font-medium truncate max-w-[200px]">
-                        {order.items[0]?.title}
+                        {order.items?.[0]?.title || (order as any)?.product?.name || 'Piece'}
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        {order.items[0]?.brand} • Qty {order.items[0]?.quantity || 1}
-                        {order.items.length > 1 && ` (+${order.items.length - 1} more)`}
+                        {order.items?.[0]?.brand || 'OFFSCRIPT'} • Qty {order.items?.[0]?.quantity || (order as any)?.quantity || 1}
+                        {(order.items?.length || 0) > 1 && ` (+${order.items.length - 1} more)`}
                       </div>
                     </div>
 
                     <div className="text-right">
                       <div className="text-sm font-mono font-bold text-foreground">
-                        {formatINR(order.total)}
+                        {formatINR(order.total ?? (order as any)?.grandTotal ?? 0)}
                       </div>
                       <div className="text-[10px] text-muted-foreground uppercase">COD Due</div>
                     </div>

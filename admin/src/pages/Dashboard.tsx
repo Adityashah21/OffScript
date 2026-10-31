@@ -62,7 +62,7 @@ export const Dashboard: React.FC = () => {
     },
   });
 
-  const orders = ordersData?.data || [];
+  const orders: Order[] = (ordersData as any)?.items || (ordersData as any)?.data || [];
   const products = productsData?.items || [];
   const totalProductsCount = productsData?.total ?? products.length;
 

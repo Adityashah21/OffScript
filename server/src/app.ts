@@ -17,6 +17,8 @@ import { contactRouter } from "./routes/contact.routes.js";
 import { newsletterRouter } from "./routes/newsletter.routes.js";
 import { affiliateRouter } from "./routes/affiliate.routes.js";
 import { adminRouter } from "./routes/admin/index.js";
+import { seed } from "./scripts/seed.js";
+import { Product } from "./models/Product.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -125,6 +127,17 @@ export function createApp(): Express {
 
   app.get("/api/health", (_req: Request, res: Response) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Database seed trigger (idempotent, safe for initial setup)
+  app.all("/api/seed", async (_req: Request, res: Response, next) => {
+    try {
+      await seed();
+      const count = await Product.countDocuments();
+      res.status(200).json({ ok: true, message: `Seeded catalog successfully. Total pieces: ${count}` });
+    } catch (error) {
+      next(error);
+    }
   });
 
   // 9. Public API Routes

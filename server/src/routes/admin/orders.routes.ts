@@ -1,10 +1,70 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
+import mongoose from "mongoose";
 import { z } from "zod";
 import { Order } from "../../models/Order.js";
 import { ORDER_STATUSES } from "../../schemas/order.schema.js";
 import { AppError } from "../../middleware/errorHandler.js";
 
 export const adminOrdersRouter = Router();
+
+export function formatAdminOrder(o: any) {
+  const json = typeof o?.toJSON === "function" ? o.toJSON() : o;
+  if (!json) return json;
+
+  const items = [
+    {
+      productId: json.product?.productId || json.product?.slug || "piece",
+      title: json.product?.name || json.product?.slug || "Piece",
+      brand: "OFFSCRIPT",
+      price: json.product?.unitPrice || json.itemTotal || 0,
+      quantity: json.quantity || 1,
+      selectedSize: json.size,
+      selectedColor: json.color,
+      imageUrl: json.product?.image || "",
+    },
+  ];
+
+  const fullName = json.customer?.fullName || json.customer?.name || "Customer";
+  const mobile = json.customer?.mobile || json.customer?.phone || "";
+  const email = json.customer?.email || "";
+  const addr = json.customer?.address || json.deliveryAddress || {};
+
+  const customer = {
+    ...json.customer,
+    name: fullName,
+    fullName,
+    phone: mobile,
+    mobile,
+    email,
+    address: addr,
+  };
+
+  const deliveryAddress = {
+    line1: addr.house || addr.line1 || "",
+    line2: addr.street || addr.line2 || "",
+    landmark: addr.landmark || "",
+    city: addr.city || "",
+    state: addr.state || "",
+    pincode: addr.pin || addr.pincode || "",
+  };
+
+  const total = json.grandTotal ?? json.total ?? ((json.itemTotal || 0) + (json.shipping || 0));
+  const subtotal = json.itemTotal ?? json.subtotal ?? 0;
+  const shippingFee = json.shipping ?? json.shippingFee ?? 0;
+
+  return {
+    ...json,
+    _id: String(json._id || json.id || json.ref),
+    id: String(json.id || json._id || json.ref),
+    items,
+    customer,
+    deliveryAddress,
+    total,
+    subtotal,
+    shippingFee,
+    paymentMethod: "cod",
+  };
+}
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   pending: ["confirmed", "cancelled"],
@@ -23,23 +83,26 @@ const updateStatusSchema = z.object({
 function buildOrderFilter(query: Request["query"]) {
   const filter: Record<string, unknown> = {};
 
-  if (query.status && typeof query.status === "string") {
+  if (query.status && typeof query.status === "string" && query.status !== "all") {
     filter.status = query.status;
   }
 
-  if (query.from || query.to) {
+  const from = query.from || query.startDate;
+  const to = query.to || query.endDate;
+  if (from || to) {
     const dateFilter: Record<string, Date> = {};
-    if (typeof query.from === "string") {
-      dateFilter.$gte = new Date(query.from);
+    if (typeof from === "string" && from) {
+      dateFilter.$gte = new Date(from);
     }
-    if (typeof query.to === "string") {
-      dateFilter.$lte = new Date(query.to);
+    if (typeof to === "string" && to) {
+      dateFilter.$lte = new Date(to);
     }
     filter.createdAt = dateFilter;
   }
 
-  if (typeof query.search === "string" && query.search.trim()) {
-    const s = query.search.trim();
+  const rawSearch = typeof query.search === "string" ? query.search : typeof query.query === "string" ? query.query : "";
+  if (rawSearch.trim()) {
+    const s = rawSearch.trim();
     filter.$or = [
       { ref: { $regex: s, $options: "i" } },
       { "customer.mobile": { $regex: s, $options: "i" } },
@@ -127,14 +190,46 @@ adminOrdersRouter.get("/", async (req: Request, res: Response, next: NextFunctio
 
     const filter = buildOrderFilter(req.query);
 
-    const [items, total] = await Promise.all([
+    const [
+      items,
+      total,
+      pendingCount,
+      confirmedCount,
+      shippedCount,
+      deliveredCount,
+      cancelledCount,
+      rtoCount,
+    ] = await Promise.all([
       Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
       Order.countDocuments(filter),
+      Order.countDocuments({ status: "pending" }),
+      Order.countDocuments({ status: "confirmed" }),
+      Order.countDocuments({ status: "shipped" }),
+      Order.countDocuments({ status: "delivered" }),
+      Order.countDocuments({ status: "cancelled" }),
+      Order.countDocuments({ status: "rto" }),
     ]);
 
+    const formattedItems = items.map(formatAdminOrder);
+
     res.json({
-      items: items.map((o) => o.toJSON()),
+      data: formattedItems,
+      items: formattedItems,
       total,
+      meta: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit) || 1,
+        statusCounts: {
+          pending: pendingCount,
+          confirmed: confirmedCount,
+          shipped: shippedCount,
+          delivered: deliveredCount,
+          cancelled: cancelledCount,
+          rto: rtoCount,
+        },
+      },
       page,
       limit,
     });
@@ -146,11 +241,20 @@ adminOrdersRouter.get("/", async (req: Request, res: Response, next: NextFunctio
 // GET /api/admin/orders/:ref
 adminOrdersRouter.get("/:ref", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const order = await Order.findOne({ ref: req.params.ref });
+    const rawRef = req.params.ref;
+    const idOrRef = (Array.isArray(rawRef) ? rawRef[0] : rawRef) || "";
+    const isObjectId = mongoose.Types.ObjectId.isValid(idOrRef);
+    const order = await Order.findOne({
+      $or: [{ ref: idOrRef }, ...(isObjectId ? [{ _id: idOrRef }] : [])],
+    });
     if (!order) {
       throw new AppError(404, "ORDER_NOT_FOUND", "Order not found");
     }
-    res.json(order.toJSON());
+    const formatted = formatAdminOrder(order);
+    res.json({
+      data: formatted,
+      ...formatted,
+    });
   } catch (error) {
     next(error);
   }
@@ -161,7 +265,12 @@ adminOrdersRouter.patch("/:ref/status", async (req: Request, res: Response, next
   try {
     const { status: newStatus, note } = updateStatusSchema.parse(req.body);
 
-    const order = await Order.findOne({ ref: req.params.ref });
+    const rawRef = req.params.ref;
+    const idOrRef = (Array.isArray(rawRef) ? rawRef[0] : rawRef) || "";
+    const isObjectId = mongoose.Types.ObjectId.isValid(idOrRef);
+    const order = await Order.findOne({
+      $or: [{ ref: idOrRef }, ...(isObjectId ? [{ _id: idOrRef }] : [])],
+    });
     if (!order) {
       throw new AppError(404, "ORDER_NOT_FOUND", "Order not found");
     }
@@ -186,7 +295,11 @@ adminOrdersRouter.patch("/:ref/status", async (req: Request, res: Response, next
 
     await order.save();
 
-    res.json(order.toJSON());
+    const formatted = formatAdminOrder(order);
+    res.json({
+      data: formatted,
+      ...formatted,
+    });
   } catch (error) {
     next(error);
   }

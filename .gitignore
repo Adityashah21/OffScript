@@ -6,6 +6,8 @@ node_modules/
 dist/
 dist-ssr/
 */dist/
+!server/dist/
+!server/dist/**
 .output/
 .vinxi/
 .tanstack/**

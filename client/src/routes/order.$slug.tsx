@@ -111,10 +111,22 @@ function CODOrderForm({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const message =
+        let message =
+          errorData.error?.message ||
           errorData.message ||
-          (errorData.details && errorData.details[0]?.message) ||
-          "Failed to place order request. Please check your information.";
+          (errorData.details && errorData.details[0]?.message);
+
+        if (errorData.error?.details && typeof errorData.error.details === "object") {
+          const detailMsgs = Object.values(errorData.error.details).filter(Boolean);
+          if (detailMsgs.length > 0) {
+            message = `${message ? `${message}: ` : ""}${detailMsgs.join(". ")}`;
+          }
+        }
+
+        if (!message) {
+          message = "Failed to place order request. Please check your information.";
+        }
+
         setErrors((prev) => ({ ...prev, product: message }));
         setSubmitting(false);
         return;

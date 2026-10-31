@@ -47,9 +47,9 @@ export const OrderDetail: React.FC = () => {
   } = useQuery<Order>({
     queryKey: ['order', ref],
     queryFn: async () => {
-      // Backend: GET /api/admin/orders/:idOrRef returns { data: Order }
-      const res = await api.get<{ data: Order }>(`/api/admin/orders/${ref}`);
-      return res.data;
+      // Backend: GET /api/admin/orders/:idOrRef returns { data: Order } or direct Order
+      const res = await api.get<any>(`/api/admin/orders/${ref}`);
+      return res?.data || res;
     },
     enabled: Boolean(ref),
   });
@@ -166,11 +166,11 @@ export const OrderDetail: React.FC = () => {
           <Card>
             <CardHeader className="pb-3 border-b">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Package Items ({order.items.length})
+                Package Items ({order.items?.length || 0})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 divide-y">
-              {order.items.map((item: OrderItem, index: number) => (
+              {(order.items || []).map((item: OrderItem, index: number) => (
                 <div key={index} className="p-4 flex items-center gap-4">
                   {item.imageUrl ? (
                     <img

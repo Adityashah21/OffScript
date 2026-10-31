@@ -1,5 +1,7 @@
 node_modules/
-dist/
+# dist/ tracked for production deployment
+!dist/
+!dist/**
 .env
 .env.local
 uploads/*

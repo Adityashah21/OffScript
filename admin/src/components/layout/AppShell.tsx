@@ -60,7 +60,7 @@ export const AppShell: React.FC = () => {
       const res = await api.get<ApiSuccessResponse<Order[]>>('/api/admin/orders', {
         params: { status: 'pending', limit: 1 },
       });
-      return res?.meta?.total ?? res?.meta?.statusCounts?.pending ?? 0;
+      return (res as any)?.total ?? res?.meta?.total ?? res?.meta?.statusCounts?.pending ?? 0;
     },
     refetchInterval: 30000,
     refetchOnWindowFocus: true,
