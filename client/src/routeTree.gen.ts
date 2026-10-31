@@ -12,14 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccessoriesRouteImport } from './routes/accessories'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as MenRouteImport } from './routes/men'
+import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as StreetwearRouteImport } from './routes/streetwear'
 import { Route as Under999RouteImport } from './routes/under-999'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as WomenRouteImport } from './routes/women'
+import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
 import { Route as CollectionsSlugRouteImport } from './routes/collections.$slug'
 import { Route as EditSlugRouteImport } from './routes/edit.$slug'
 import { Route as LegalSlugRouteImport } from './routes/legal.$slug'
@@ -41,6 +45,11 @@ const AccessoriesRoute = AccessoriesRouteImport.update({
   path: '/accessories',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
@@ -56,9 +65,19 @@ const FaqRoute = FaqRouteImport.update({
   path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MenRoute = MenRouteImport.update({
   id: '/men',
   path: '/men',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StreetwearRoute = StreetwearRouteImport.update({
@@ -79,6 +98,11 @@ const WishlistRoute = WishlistRouteImport.update({
 const WomenRoute = WomenRouteImport.update({
   id: '/women',
   path: '/women',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
+  id: '/collections/',
+  path: '/collections/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CollectionsSlugRoute = CollectionsSlugRouteImport.update({
@@ -111,10 +135,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accessories': typeof AccessoriesRoute
+  '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
   '/faq': typeof FaqRoute
+  '/login': typeof LoginRoute
   '/men': typeof MenRoute
+  '/orders': typeof OrdersRoute
   '/streetwear': typeof StreetwearRoute
   '/under-999': typeof Under999Route
   '/wishlist': typeof WishlistRoute
@@ -124,15 +151,19 @@ export interface FileRoutesByFullPath {
   '/legal/$slug': typeof LegalSlugRoute
   '/order/$slug': typeof OrderSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/collections/': typeof CollectionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accessories': typeof AccessoriesRoute
+  '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
   '/faq': typeof FaqRoute
+  '/login': typeof LoginRoute
   '/men': typeof MenRoute
+  '/orders': typeof OrdersRoute
   '/streetwear': typeof StreetwearRoute
   '/under-999': typeof Under999Route
   '/wishlist': typeof WishlistRoute
@@ -142,16 +173,20 @@ export interface FileRoutesByTo {
   '/legal/$slug': typeof LegalSlugRoute
   '/order/$slug': typeof OrderSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/collections': typeof CollectionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/accessories': typeof AccessoriesRoute
+  '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
   '/faq': typeof FaqRoute
+  '/login': typeof LoginRoute
   '/men': typeof MenRoute
+  '/orders': typeof OrdersRoute
   '/streetwear': typeof StreetwearRoute
   '/under-999': typeof Under999Route
   '/wishlist': typeof WishlistRoute
@@ -161,6 +196,7 @@ export interface FileRoutesById {
   '/legal/$slug': typeof LegalSlugRoute
   '/order/$slug': typeof OrderSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/collections/': typeof CollectionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -168,10 +204,13 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/accessories'
+    | '/admin'
     | '/contact'
     | '/discover'
     | '/faq'
+    | '/login'
     | '/men'
+    | '/orders'
     | '/streetwear'
     | '/under-999'
     | '/wishlist'
@@ -181,15 +220,19 @@ export interface FileRouteTypes {
     | '/legal/$slug'
     | '/order/$slug'
     | '/product/$slug'
+    | '/collections/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/accessories'
+    | '/admin'
     | '/contact'
     | '/discover'
     | '/faq'
+    | '/login'
     | '/men'
+    | '/orders'
     | '/streetwear'
     | '/under-999'
     | '/wishlist'
@@ -199,15 +242,19 @@ export interface FileRouteTypes {
     | '/legal/$slug'
     | '/order/$slug'
     | '/product/$slug'
+    | '/collections'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/accessories'
+    | '/admin'
     | '/contact'
     | '/discover'
     | '/faq'
+    | '/login'
     | '/men'
+    | '/orders'
     | '/streetwear'
     | '/under-999'
     | '/wishlist'
@@ -217,16 +264,20 @@ export interface FileRouteTypes {
     | '/legal/$slug'
     | '/order/$slug'
     | '/product/$slug'
+    | '/collections/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccessoriesRoute: typeof AccessoriesRoute
+  AdminRoute: typeof AdminRoute
   ContactRoute: typeof ContactRoute
   DiscoverRoute: typeof DiscoverRoute
   FaqRoute: typeof FaqRoute
+  LoginRoute: typeof LoginRoute
   MenRoute: typeof MenRoute
+  OrdersRoute: typeof OrdersRoute
   StreetwearRoute: typeof StreetwearRoute
   Under999Route: typeof Under999Route
   WishlistRoute: typeof WishlistRoute
@@ -236,6 +287,7 @@ export interface RootRouteChildren {
   LegalSlugRoute: typeof LegalSlugRoute
   OrderSlugRoute: typeof OrderSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
+  CollectionsIndexRoute: typeof CollectionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -261,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccessoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
@@ -282,11 +341,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/men': {
       id: '/men'
       path: '/men'
       fullPath: '/men'
       preLoaderRoute: typeof MenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/streetwear': {
@@ -315,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/women'
       fullPath: '/women'
       preLoaderRoute: typeof WomenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collections/': {
+      id: '/collections/'
+      path: '/collections'
+      fullPath: '/collections/'
+      preLoaderRoute: typeof CollectionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/collections/$slug': {
@@ -359,10 +439,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccessoriesRoute: AccessoriesRoute,
+  AdminRoute: AdminRoute,
   ContactRoute: ContactRoute,
   DiscoverRoute: DiscoverRoute,
   FaqRoute: FaqRoute,
+  LoginRoute: LoginRoute,
   MenRoute: MenRoute,
+  OrdersRoute: OrdersRoute,
   StreetwearRoute: StreetwearRoute,
   Under999Route: Under999Route,
   WishlistRoute: WishlistRoute,
@@ -372,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalSlugRoute: LegalSlugRoute,
   OrderSlugRoute: OrderSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
+  CollectionsIndexRoute: CollectionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

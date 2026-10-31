@@ -1,0 +1,31 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "https://offscript-admin.vercel.app",
+      "permanent": false
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://offscript-admin.vercel.app/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/collections",
+      "destination": "/collections/discover",
+      "permanent": false
+    },
+    {
+      "source": "/product",
+      "destination": "/collections/discover",
+      "permanent": false
+    },
+    {
+      "source": "/order",
+      "destination": "/collections/discover",
+      "permanent": false
+    }
+  ]
+}
