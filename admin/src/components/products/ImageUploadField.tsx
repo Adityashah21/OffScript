@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, ArrowLeft, ArrowRight, Link as LinkIcon } from 'lucide-react';
+import { Upload, X, ArrowLeft, ArrowRight, Link as LinkIcon, Sparkles } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { api } from '../../lib/api';
@@ -9,6 +9,7 @@ export interface ImageUploadFieldProps {
   images: string[];
   onChange: (images: string[]) => void;
   error?: string;
+  onOpenAiStudio?: () => void;
 }
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -18,6 +19,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   images,
   onChange,
   error,
+  onOpenAiStudio,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -138,6 +140,33 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
           JPG, PNG, or WebP • Max 5 MB each • First image becomes main cover
         </p>
       </div>
+
+      {/* AI Model Virtual Try-On Studio Banner */}
+      {onOpenAiStudio && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground">AI Model Virtual Try-On Studio</p>
+              <p className="text-[11px] text-muted-foreground">
+                Synthesize 4 multi-angle editorial photographs on models wearing this piece
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onOpenAiStudio}
+            className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10 text-xs font-mono shrink-0"
+          >
+            <Sparkles className="h-3 w-3" />
+            Launch AI Studio
+          </Button>
+        </div>
+      )}
 
       {/* Fallback Paste URL Input */}
       <div className="flex gap-2">

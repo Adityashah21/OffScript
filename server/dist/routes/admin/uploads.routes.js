@@ -37,6 +37,16 @@ const upload = multer({
     fileFilter,
 });
 export const adminUploadsRouter = Router();
+// GET /api/admin/uploads/status
+adminUploadsRouter.get("/status", (_req, res) => {
+    res.json({
+        provider: storageService.isCloud() ? "cloudinary" : "local",
+        isCloud: storageService.isCloud(),
+        message: storageService.isCloud()
+            ? "Cloudinary cloud storage is active"
+            : "Local disk storage active. Add CLOUDINARY_* environment variables for permanent cloud CDN.",
+    });
+});
 // POST /api/admin/uploads
 adminUploadsRouter.post("/", upload.single("image"), async (req, res, next) => {
     try {

@@ -15,6 +15,7 @@ import {
   Moon,
   ExternalLink,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -82,6 +83,7 @@ export const AppShell: React.FC = () => {
       badgeVariant: 'warning' as const,
     },
     { name: 'Products', to: '/products', icon: Package },
+    { name: 'AI Studio', to: '/ai-studio', icon: Sparkles },
     { name: 'Collections', to: '/collections', icon: Layers },
     { name: 'Edits', to: '/edits', icon: FileText },
     { name: 'Inbox & CRM', to: '/inbox', icon: Mail },

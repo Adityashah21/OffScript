@@ -11,6 +11,7 @@ import {
   Info,
   AlertCircle,
   Eye,
+  Sparkles,
 } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 import type { Product, Collection } from '../types/api';
@@ -29,6 +30,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { ImageUploadField } from '../components/products/ImageUploadField';
 import { VariantChipsInput } from '../components/products/VariantChipsInput';
 import { ProductPreviewCard } from '../components/products/ProductPreviewCard';
+import { AiModelStudioModal } from '../components/products/AiModelStudioModal';
 import { toast } from 'sonner';
 
 export const ProductForm: React.FC = () => {
@@ -44,6 +46,7 @@ export const ProductForm: React.FC = () => {
 
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(isEditMode);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isAiStudioOpen, setIsAiStudioOpen] = useState(false);
 
   // Fetch available collections for multi-select
   const { data: collections = [] } = useQuery<Collection[]>({
@@ -59,6 +62,7 @@ export const ProductForm: React.FC = () => {
     handleSubmit,
     control,
     setValue,
+    getValues,
     watch,
     reset,
     formState: { errors, isSubmitting, isDirty },
@@ -105,6 +109,23 @@ export const ProductForm: React.FC = () => {
       setValue('slug', slugify(watchedName), { shouldValidate: true });
     }
   }, [watchedName, slugManuallyEdited, isEditMode, setValue]);
+
+  // Check for prefilled images from AI Studio
+  useEffect(() => {
+    if (!isEditMode) {
+      try {
+        const prefilled = sessionStorage.getItem('offscript_prefill_images');
+        if (prefilled) {
+          const urls = JSON.parse(prefilled);
+          if (Array.isArray(urls) && urls.length > 0) {
+            setValue('images', urls, { shouldDirty: true, shouldValidate: true });
+            sessionStorage.removeItem('offscript_prefill_images');
+            toast.success(`Loaded ${urls.length} model angle(s) from AI Studio!`);
+          }
+        }
+      } catch {}
+    }
+  }, [isEditMode, setValue]);
 
   // Load existing product if edit mode or duplicate mode
   const { data: existingProduct, isLoading: isLoadingProduct } = useQuery<Product>({
@@ -541,10 +562,22 @@ export const ProductForm: React.FC = () => {
 
             {/* 5. Images */}
             <Card>
-              <CardHeader className="pb-3 border-b">
-                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Product Images *
-                </CardTitle>
+              <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    Product Images *
+                  </CardTitle>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAiStudioOpen(true)}
+                  className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10 text-xs font-mono"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  AI Model Studio
+                </Button>
               </CardHeader>
               <CardContent className="pt-4">
                 <Controller
@@ -555,11 +588,28 @@ export const ProductForm: React.FC = () => {
                       images={field.value}
                       onChange={field.onChange}
                       error={errors.images?.message}
+                      onOpenAiStudio={() => setIsAiStudioOpen(true)}
                     />
                   )}
                 />
               </CardContent>
             </Card>
+
+            {/* AI Model Studio Modal */}
+            <AiModelStudioModal
+              isOpen={isAiStudioOpen}
+              onClose={() => setIsAiStudioOpen(false)}
+              productName={watch('name')}
+              category={watch('category')}
+              existingImages={watch('images')}
+              onApplyImages={(newUrls) => {
+                const current = getValues('images') || [];
+                setValue('images', [...current, ...newUrls], {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+            />
 
             {/* 6. Variants (Sizes & Colors) */}
             <Card>

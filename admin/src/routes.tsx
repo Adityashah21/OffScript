@@ -14,6 +14,7 @@ const Collections = lazy(() => import('./pages/Collections').then((m) => ({ defa
 const Edits = lazy(() => import('./pages/Edits').then((m) => ({ default: m.Edits })));
 const Inbox = lazy(() => import('./pages/Inbox').then((m) => ({ default: m.Inbox })));
 const Analytics = lazy(() => import('./pages/Analytics').then((m) => ({ default: m.Analytics })));
+const AiStudio = lazy(() => import('./pages/AiStudio').then((m) => ({ default: m.AiStudio })));
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 
 const RouteLoading: React.FC = () => (
@@ -94,6 +95,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="edits" element={<Edits />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="ai-studio" element={<AiStudio />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

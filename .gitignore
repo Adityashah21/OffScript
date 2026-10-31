@@ -22,6 +22,7 @@ dist-ssr/
 *.local
 
 # Dynamic uploads (preserve seed assets)
+uploads/
 server/uploads/*
 !server/uploads/seed/
 !server/uploads/seed/*
