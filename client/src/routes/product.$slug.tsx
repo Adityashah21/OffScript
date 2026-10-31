@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { getProduct, products } from "@/data/products";
+import { getProduct, fetchProductBySlug, getAllProducts, products, type Product } from "@/data/products";
 import { Breadcrumbs } from "@/components/Editorial";
 import { PriceBadge, ProductCard } from "@/components/ProductCard";
 import { PurchaseActions } from "@/components/PurchaseActions";
@@ -11,10 +11,13 @@ import { seo } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/product/$slug")({
-  loader: ({ params }) => {
-    const p = getProduct(params.slug);
+  loader: async ({ params }) => {
+    let p = getProduct(params.slug);
+    if (!p) {
+      p = (await fetchProductBySlug(params.slug)) || undefined;
+    }
     if (!p) throw notFound();
-    return { name: p.name, description: p.description };
+    return { name: p.name, description: p.description, product: p };
   },
   head: ({ loaderData }) =>
     loaderData ? seo(loaderData.name, loaderData.description) : { meta: [{ title: "Piece not found — OFFSCRIPT" }, { name: "robots", content: "noindex" }] },
@@ -51,13 +54,15 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
 
 function ProductPage() {
   const { slug } = Route.useParams();
-  const p = getProduct(slug)!;
+  const loaderData = Route.useLoaderData();
+  const p = (loaderData?.product as Product) || getProduct(slug)!;
   const [size, setSize] = useState("");
-  const [color, setColor] = useState(p.availableColors[0] ?? "");
+  const [color, setColor] = useState(p?.availableColors?.[0] ?? "");
 
-  const similar = products.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 4);
-  const collection = products.filter((x) => x.id !== p.id && !similar.includes(x) && x.collectionIds.some((c) => p.collectionIds.includes(c))).slice(0, 4);
-  const budget = products.filter((x) => x.id !== p.id && Math.abs(x.price - p.price) <= 400).slice(0, 4);
+  const all = getAllProducts();
+  const similar = all.filter((x) => x.id !== p?.id && x.category === p?.category).slice(0, 4);
+  const collection = all.filter((x) => x.id !== p?.id && !similar.includes(x) && x.collectionIds.some((c) => p?.collectionIds?.includes(c))).slice(0, 4);
+  const budget = all.filter((x) => x.id !== p?.id && Math.abs(x.price - (p?.price || 0)) <= 400).slice(0, 4);
 
   return (
     <div key={slug} className="mx-auto max-w-[1600px] px-5 pt-6 md:px-10">

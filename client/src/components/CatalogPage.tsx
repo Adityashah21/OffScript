@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { getCollection, productsIn } from "@/data/collections";
-import type { Product } from "@/data/products";
+import { subscribeProducts, fetchLiveProducts, type Product } from "@/data/products";
 import { Breadcrumbs, EmptyState } from "./Editorial";
 import { ProductGrid } from "./ProductCard";
 import { cn } from "@/lib/utils";
@@ -47,7 +47,14 @@ export function applyFilters(list: Product[], f: Filters, sort: SortKey) {
 
 export function CatalogPage({ slug, hero }: { slug: string; hero?: React.ReactNode }) {
   const c = getCollection(slug)!;
-  const base = useMemo(() => productsIn(slug), [slug]);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    fetchLiveProducts().then(() => setTick((t) => t + 1));
+    return subscribeProducts(() => setTick((t) => t + 1));
+  }, []);
+
+  const base = useMemo(() => productsIn(slug), [slug, tick]);
   const [f, setF] = useState<Filters>(EMPTY);
   const [sort, setSort] = useState<SortKey>("recommended");
   const [drawer, setDrawer] = useState(false);

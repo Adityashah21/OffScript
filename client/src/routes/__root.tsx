@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { fetchLiveProducts } from "@/data/products";
 
 function NotFoundComponent() {
   return (
@@ -98,6 +99,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    fetchLiveProducts();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -56,6 +56,38 @@ adminAiRouter.get("/presets", (_req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/admin/ai/verify-key
+ * Validates Gemini API Key against Google's API and returns operational status
+ */
+adminAiRouter.post("/verify-key", async (req: Request, res: Response) => {
+  const key = (req.body.apiKey || process.env.GEMINI_API_KEY || "").trim();
+  if (!key) {
+    return res.status(400).json({ valid: false, error: "No API key provided" });
+  }
+
+  try {
+    const { GoogleGenAI } = await import("@google/genai");
+    const ai = new GoogleGenAI({ apiKey: key });
+    const testRes = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: [{ role: "user", parts: [{ text: "ping" }] }],
+    });
+    if (testRes.text) {
+      return res.json({
+        valid: true,
+        message: "Gemini API connection verified! Ready for AI model synthesis.",
+      });
+    }
+    return res.json({ valid: true, message: "Gemini key accepted." });
+  } catch (err: any) {
+    return res.status(400).json({
+      valid: false,
+      error: err?.message || "Failed to connect to Google Gemini API",
+    });
+  }
+});
+
+/**
  * POST /api/admin/ai/upload-model
  * Allows admin to upload their own model photo to cloud/local storage
  */

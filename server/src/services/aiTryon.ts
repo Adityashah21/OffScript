@@ -276,6 +276,8 @@ Format strictly as JSON:
 
       // Step 2: Generate images for each requested angle using Imagen 3
       const generatedResults: GeneratedAngleResult[] = [];
+      let hadLiveGeneration = false;
+      let lastErrorNotice: string | null = null;
 
       for (const angleId of requestedAngles) {
         const angleDef = TRYON_ANGLES.find((a) => a.id === angleId) || TRYON_ANGLES[0];
@@ -304,6 +306,7 @@ Format strictly as JSON:
             const safeName = `ai-${req.productName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${angleId}.jpg`;
             const permanentUrl = await storageService.saveBuffer(imgBuffer, safeName, "image/jpeg");
 
+            hadLiveGeneration = true;
             generatedResults.push({
               angleId,
               angleName: angleDef.name,
@@ -315,10 +318,11 @@ Format strictly as JSON:
             continue;
           }
         } catch (imgGenErr: any) {
-          console.warn(`⚠️ Imagen 3 generation for angle ${angleId} encountered an error:`, imgGenErr?.message || imgGenErr);
+          lastErrorNotice = imgGenErr?.message || String(imgGenErr);
+          console.warn(`⚠️ Imagen 3 generation for angle ${angleId} note:`, lastErrorNotice);
         }
 
-        // If a specific angle image generation errored (e.g. quota or content filter), provide graceful fallback for that angle
+        // If a specific angle image generation errored, provide graceful fallback for that angle
         const categoryKey = req.category.toLowerCase().includes("hoodie")
           ? "hoodie"
           : req.category.toLowerCase().includes("jacket")
@@ -345,8 +349,12 @@ Format strictly as JSON:
         success: true,
         productName: req.productName,
         aesthetic: aestheticLabel,
-        isDemo: false,
-        message: "Generated 4 multi-angle model photographs using Gemini API & Imagen 3.",
+        isDemo: !hadLiveGeneration,
+        message: hadLiveGeneration
+          ? "Generated multi-angle model photographs using Gemini API & Imagen 3."
+          : lastErrorNotice
+          ? `Gemini notice: ${lastErrorNotice}. Loaded curated high-fashion model shots.`
+          : "Loaded curated high-fashion model shots.",
         images: generatedResults,
       };
     } catch (err: any) {

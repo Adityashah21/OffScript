@@ -10,7 +10,7 @@ import creamTee from "@/assets/p-cream-tee.jpg";
 import sneakers from "@/assets/p-sneakers.jpg";
 import cargo from "@/assets/p-cargo.jpg";
 import bag from "@/assets/p-bag.jpg";
-import { products, type Product } from "./products";
+import { products, getAllProducts, type Product } from "./products";
 
 export interface Collection {
   slug: string;
@@ -56,7 +56,8 @@ export const collections: Collection[] = [
 export const getCollection = (slug: string) => collections.find((c) => c.slug === slug);
 export const productsIn = (slug: string) => {
   const c = getCollection(slug);
-  return c ? products.filter(c.match) : [];
+  const all = getAllProducts();
+  return c ? all.filter(c.match) : [];
 };
 
 export const trendSlugs = ["oversized-tees", "coffee-date", "clean-fit", "college-core", "monochrome", "sneaker-edit"];

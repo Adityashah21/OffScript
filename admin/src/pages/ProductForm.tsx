@@ -31,6 +31,7 @@ import { ImageUploadField } from '../components/products/ImageUploadField';
 import { VariantChipsInput } from '../components/products/VariantChipsInput';
 import { ProductPreviewCard } from '../components/products/ProductPreviewCard';
 import { AiModelStudioModal } from '../components/products/AiModelStudioModal';
+import { AiModelTryonSection } from '../components/products/AiModelTryonSection';
 import { toast } from 'sonner';
 
 export const ProductForm: React.FC = () => {
@@ -560,12 +561,26 @@ export const ProductForm: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* 5. Images */}
+            {/* 5. AI Virtual Model Try-On Studio */}
+            <AiModelTryonSection
+              productName={watch('name')}
+              category={watch('category')}
+              currentImages={watch('images') || []}
+              onAddImages={(newUrls) => {
+                const current = getValues('images') || [];
+                setValue('images', [...current, ...newUrls], {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+            />
+
+            {/* 6. Product Images Gallery */}
             <Card>
               <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                    Product Images *
+                    Product Images Gallery *
                   </CardTitle>
                 </div>
                 <Button
@@ -576,7 +591,7 @@ export const ProductForm: React.FC = () => {
                   className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10 text-xs font-mono"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                  AI Model Studio
+                  Full Studio View
                 </Button>
               </CardHeader>
               <CardContent className="pt-4">

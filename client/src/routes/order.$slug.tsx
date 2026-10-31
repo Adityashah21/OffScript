@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { getProduct, type Product } from "@/data/products";
+import { getProduct, fetchProductBySlug, type Product } from "@/data/products";
 import { inr } from "@/lib/format";
 import { isCodEligible, MAX_QTY, mockOrderRef, orderTotal, validateOrder, type OrderInput } from "@/lib/order";
 import { seo } from "@/lib/seo";
@@ -9,10 +9,13 @@ import { customerProfile, recordCustomerOrder } from "@/lib/store";
 
 export const Route = createFileRoute("/order/$slug")({
   validateSearch: (s: Record<string, unknown>) => ({ size: typeof s["size"] === "string" ? (s["size"] as string) : undefined }),
-  loader: ({ params }) => {
-    const p = getProduct(params.slug);
+  loader: async ({ params }) => {
+    let p = getProduct(params.slug);
+    if (!p) {
+      p = (await fetchProductBySlug(params.slug)) || undefined;
+    }
     if (!p) throw notFound();
-    return { name: p.name };
+    return { name: p.name, product: p };
   },
   head: ({ loaderData }) => ({
     ...seo(`Order request: ${loaderData?.name ?? "Piece"}`, "Request this piece with cash on delivery."),
@@ -26,7 +29,8 @@ const STATES = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisga
 function OrderPage() {
   const { slug } = Route.useParams();
   const { size } = Route.useSearch();
-  const p = getProduct(slug)!;
+  const loaderData = Route.useLoaderData();
+  const p = (loaderData?.product as Product) || getProduct(slug)!;
   const [done, setDone] = useState<{ ref: string; form: OrderInput } | null>(null);
 
   if (!isCodEligible(p)) {

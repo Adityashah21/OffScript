@@ -392,7 +392,169 @@ export const products: Product[] = [
   },
 ];
 
-export const getProduct = (slug: string) => products.find((p) => p.slug === slug);
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? "https://offscript-p9rk.onrender.com"
+    : "http://localhost:5000");
+
+// In-memory list of live products loaded from the database
+let liveProducts: Product[] = [];
+
+// Subscribers for product updates
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+export function subscribeProducts(listener: Listener) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function notifyListeners() {
+  listeners.forEach((fn) => {
+    try {
+      fn();
+    } catch {}
+  });
+}
+
+export function setLiveProducts(newProducts: Product[]) {
+  liveProducts = newProducts;
+  try {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("offscript_live_products", JSON.stringify(newProducts));
+    }
+  } catch {}
+  notifyListeners();
+}
+
+// Restore cached products on load
+if (typeof window !== "undefined") {
+  try {
+    const cached = localStorage.getItem("offscript_live_products");
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        liveProducts = parsed;
+      }
+    }
+  } catch {}
+}
+
+export function getAllProducts(): Product[] {
+  const map = new Map<string, Product>();
+  // 1. Seed products first
+  for (const p of products) {
+    map.set(p.slug.toLowerCase(), p);
+  }
+  // 2. Live database products (these override seed products or add newly created ones)
+  for (const p of liveProducts) {
+    map.set(p.slug.toLowerCase(), p);
+  }
+  return Array.from(map.values());
+}
+
+export const getProduct = (slug: string) => {
+  const normalized = (slug || "").toLowerCase().trim();
+  const all = getAllProducts();
+  return all.find((p) => p.slug.toLowerCase() === normalized);
+};
+
+export async function fetchLiveProducts(): Promise<Product[]> {
+  try {
+    const res = await fetch(`${API_URL}/api/products?limit=100`);
+    if (!res.ok) return liveProducts;
+    const data = await res.json();
+    const items: any[] = data.items || data;
+    if (Array.isArray(items) && items.length > 0) {
+      const formatted: Product[] = items.map((item) => ({
+        id: item._id || item.id || item.slug,
+        slug: item.slug,
+        name: item.name,
+        description: item.description,
+        category: item.category,
+        subcategory: item.subcategory || item.category,
+        gender: item.gender || "unisex",
+        retailer: item.retailer || "OFFSCRIPT",
+        brand: item.brand || "OFFSCRIPT",
+        price: item.price,
+        originalPrice: item.originalPrice,
+        currency: "INR",
+        images: Array.isArray(item.images) && item.images.length > 0 ? item.images : [tee],
+        availableSizes: item.availableSizes || ["S", "M", "L"],
+        availableColors: item.availableColors || ["Black"],
+        tags: item.tags || [],
+        collectionIds: item.collectionIds || ["discover", "streetwear"],
+        affiliateUrl: item.affiliateUrl || null,
+        purchaseMode: item.purchaseMode || (item.codEnabled ? "authorized_cod" : "affiliate"),
+        codEnabled: Boolean(item.codEnabled),
+        shippingCharge: item.shippingCharge || 0,
+        inStock: item.inStock !== false,
+        isFeatured: Boolean(item.isFeatured),
+        isNew: Boolean(item.isNew),
+        isEditorsPick: Boolean(item.isEditorsPick),
+        material: item.material,
+        fit: item.fit,
+        lastUpdatedAt: item.lastUpdatedAt || new Date().toISOString(),
+      }));
+      setLiveProducts(formatted);
+      return formatted;
+    }
+  } catch (err) {
+    console.warn("Failed to fetch live products from API:", err);
+  }
+  return liveProducts;
+}
+
+export async function fetchProductBySlug(slug: string): Promise<Product | null> {
+  const existing = getProduct(slug);
+  if (existing) return existing;
+
+  try {
+    const res = await fetch(`${API_URL}/api/products/${slug}`);
+    if (!res.ok) return null;
+    const item = await res.json();
+    if (item && item.slug) {
+      const formatted: Product = {
+        id: item._id || item.id || item.slug,
+        slug: item.slug,
+        name: item.name,
+        description: item.description,
+        category: item.category,
+        subcategory: item.subcategory || item.category,
+        gender: item.gender || "unisex",
+        retailer: item.retailer || "OFFSCRIPT",
+        brand: item.brand || "OFFSCRIPT",
+        price: item.price,
+        originalPrice: item.originalPrice,
+        currency: "INR",
+        images: Array.isArray(item.images) && item.images.length > 0 ? item.images : [tee],
+        availableSizes: item.availableSizes || ["S", "M", "L"],
+        availableColors: item.availableColors || ["Black"],
+        tags: item.tags || [],
+        collectionIds: item.collectionIds || ["discover", "streetwear"],
+        affiliateUrl: item.affiliateUrl || null,
+        purchaseMode: item.purchaseMode || (item.codEnabled ? "authorized_cod" : "affiliate"),
+        codEnabled: Boolean(item.codEnabled),
+        shippingCharge: item.shippingCharge || 0,
+        inStock: item.inStock !== false,
+        isFeatured: Boolean(item.isFeatured),
+        isNew: Boolean(item.isNew),
+        isEditorsPick: Boolean(item.isEditorsPick),
+        material: item.material,
+        fit: item.fit,
+        lastUpdatedAt: item.lastUpdatedAt || new Date().toISOString(),
+      };
+      setLiveProducts([...liveProducts, formatted]);
+      return formatted;
+    }
+  } catch (err) {
+    console.warn(`Failed to fetch product /${slug}:`, err);
+  }
+  return null;
+}
 
 export const retailers = Array.from(new Set(products.map((p) => p.retailer))).sort();
 export const colors = Array.from(new Set(products.flatMap((p) => p.availableColors))).sort();

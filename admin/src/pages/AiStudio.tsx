@@ -98,6 +98,7 @@ export const AiStudio: React.FC = () => {
   const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('offscript_gemini_api_key') || '');
   const [showKeyConfig, setShowKeyConfig] = useState(false);
   const [hasServerKey, setHasServerKey] = useState(false);
+  const [isVerifyingKey, setIsVerifyingKey] = useState(false);
   const [storageProvider, setStorageProvider] = useState<'cloudinary' | 'local'>('cloudinary');
 
   // Generation state
@@ -121,16 +122,29 @@ export const AiStudio: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  const handleSaveApiKey = () => {
-    const trimmed = geminiApiKey.trim();
-    if (trimmed) {
-      localStorage.setItem('offscript_gemini_api_key', trimmed);
-      toast.success('Gemini API key saved to browser');
-    } else {
-      localStorage.removeItem('offscript_gemini_api_key');
-      toast.info('Gemini API key cleared');
+  const handleVerifyKey = async () => {
+    const key = geminiApiKey.trim();
+    if (!key) {
+      toast.error('Please enter a Gemini API key first');
+      return;
     }
-    setShowKeyConfig(false);
+    setIsVerifyingKey(true);
+    try {
+      const res = await api.post<{ valid: boolean; message?: string; error?: string }>(
+        '/api/admin/ai/verify-key',
+        { apiKey: key }
+      );
+      if (res.valid) {
+        localStorage.setItem('offscript_gemini_api_key', key);
+        toast.success(res.message || 'Gemini API key verified successfully!');
+      } else {
+        toast.error(res.error || 'Gemini key validation failed');
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error validating Gemini key');
+    } finally {
+      setIsVerifyingKey(false);
+    }
   };
 
   const handleCustomModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,8 +315,14 @@ export const AiStudio: React.FC = () => {
                 onChange={(e) => setGeminiApiKey(e.target.value)}
                 className="font-mono text-xs"
               />
-              <Button type="button" size="sm" onClick={handleSaveApiKey} className="text-xs font-mono">
-                Save Key
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleVerifyKey}
+                disabled={isVerifyingKey || !geminiApiKey.trim()}
+                className="text-xs font-mono shrink-0"
+              >
+                {isVerifyingKey ? 'Testing...' : 'Verify & Save Key'}
               </Button>
             </div>
             <p className="text-[11px] text-muted-foreground">

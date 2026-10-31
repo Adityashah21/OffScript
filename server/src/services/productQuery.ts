@@ -132,7 +132,7 @@ export async function queryProducts(params: ProductQueryParams): Promise<Paginat
       },
       {
         $facet: {
-          items: [{ $sort: { score: -1, _id: 1 } }, { $skip: skip }, { $limit: limit }],
+          items: [{ $sort: { score: -1, _id: -1 } }, { $skip: skip }, { $limit: limit }],
           totalCount: [{ $count: "count" }],
         },
       },
