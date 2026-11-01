@@ -161,6 +161,43 @@ function withTimeout<T>(promise: Promise<T>, ms: number, desc: string): Promise<
   ]);
 }
 
+function determineTargetItem(category: string, productName: string): string {
+  const combined = `${category} ${productName}`.toLowerCase();
+  if (combined.includes("cap") || combined.includes("hat") || combined.includes("beanie")) {
+    return "hair";
+  }
+  if (
+    combined.includes("pant") ||
+    combined.includes("jean") ||
+    combined.includes("trouser") ||
+    combined.includes("short") ||
+    combined.includes("bottom")
+  ) {
+    return "pants";
+  }
+  if (
+    combined.includes("shoe") ||
+    combined.includes("sneaker") ||
+    combined.includes("boot") ||
+    combined.includes("footwear")
+  ) {
+    return "shoes";
+  }
+  if (
+    combined.includes("jacket") ||
+    combined.includes("coat") ||
+    combined.includes("outerwear") ||
+    combined.includes("bomber") ||
+    combined.includes("blazer")
+  ) {
+    return "jacket";
+  }
+  if (combined.includes("hoodie") || combined.includes("sweater") || combined.includes("sweatshirt")) {
+    return "shirt";
+  }
+  return "clothes";
+}
+
 export class AiTryonService {
   /**
    * Generates 4 angle try-on shots matching OFFSCRIPT luxury streetwear aesthetic.
@@ -451,11 +488,25 @@ Format strictly as JSON:
       console.warn("Could not upload model to Cloudinary, using public URL:", e.message);
     }
 
+    const targetItem = determineTargetItem(req.category || "", req.productName || "");
+    const cleanProduct = (req.productName || "streetwear piece")
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, " ")
+      .trim()
+      .replace(/\s+/g, "_")
+      .slice(0, 35);
+    const cleanCat = (req.category || "apparel")
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, " ")
+      .trim()
+      .replace(/\s+/g, "_")
+      .slice(0, 20);
+
     const aestheticPrompt = aestheticLabel
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "_")
       .replace(/_+/g, "_")
-      .slice(0, 70);
+      .slice(0, 50);
 
     const generatedResults: GeneratedAngleResult[] = [];
 
@@ -467,7 +518,8 @@ Format strictly as JSON:
         if (angleId === "front") {
           transformedUrl = cloudinary.url(modelPublicId, {
             transformation: [
-              { effect: `gen_background_replace:prompt_${aestheticPrompt}_softbox_lighting` },
+              { effect: `gen_replace:from_${targetItem};to_${cleanProduct}_${cleanCat}_luxury_streetwear` },
+              { effect: `gen_background_replace:prompt_${aestheticPrompt}_concrete_brutalist_studio_softbox_lighting` },
               { width: 900, height: 1200, crop: "fill", gravity: "auto" },
               { quality: "auto:good", fetch_format: "auto" },
             ],
@@ -476,6 +528,7 @@ Format strictly as JSON:
         } else if (angleId === "side_45") {
           transformedUrl = cloudinary.url(modelPublicId, {
             transformation: [
+              { effect: `gen_replace:from_${targetItem};to_${cleanProduct}_${cleanCat}_three_quarter_profile_silhouette` },
               { effect: `gen_background_replace:prompt_${aestheticPrompt}_charcoal_rim_lighting` },
               { width: 900, height: 1200, crop: "fill", gravity: "auto" },
               { quality: "auto:good", fetch_format: "auto" },
@@ -485,6 +538,7 @@ Format strictly as JSON:
         } else if (angleId === "back") {
           transformedUrl = cloudinary.url(modelPublicId, {
             transformation: [
+              { effect: `gen_replace:from_${targetItem};to_${cleanProduct}_${cleanCat}_worn_from_behind_rear_view` },
               { effect: `gen_background_replace:prompt_${aestheticPrompt}_architectural_minimalist` },
               { width: 900, height: 1200, crop: "fill", gravity: "auto" },
               { quality: "auto:good", fetch_format: "auto" },
@@ -495,8 +549,9 @@ Format strictly as JSON:
           // detail
           transformedUrl = cloudinary.url(modelPublicId, {
             transformation: [
-              { effect: `gen_background_replace:prompt_${aestheticPrompt}` },
-              { width: 900, height: 1200, crop: "crop", gravity: "face", zoom: 0.75 },
+              { effect: `gen_replace:from_${targetItem};to_${cleanProduct}_${cleanCat}_macro_fabric_and_emblem_detail` },
+              { effect: `gen_background_replace:prompt_${aestheticPrompt}_studio` },
+              { width: 900, height: 1200, crop: "fill", gravity: "auto" },
               { quality: "auto:good", fetch_format: "auto" },
             ],
             secure: true,
@@ -512,7 +567,7 @@ Format strictly as JSON:
         cameraAngle: angleDef.cameraAngle,
         description: angleDef.description,
         imageUrl: transformedUrl,
-        promptUsed: `Architectural brutalist studio editorial of model wearing ${req.productName} in ${aestheticLabel}.`,
+        promptUsed: `Editorial virtual try-on of model wearing ${req.productName} (${req.category}) in ${aestheticLabel} - ${angleDef.name}.`,
       });
     }
 
@@ -522,8 +577,8 @@ Format strictly as JSON:
       aesthetic: aestheticLabel,
       isDemo: false,
       message: geminiNotice
-        ? `${geminiNotice} Transformed your model with Cloudinary AI Studio into 4 OFFSCRIPT lookbook angles.`
-        : `Transformed your model with Cloudinary AI Studio into 4 OFFSCRIPT lookbook angles.`,
+        ? `${geminiNotice} Synthesized 4 lookbook angles with model wearing ${req.productName} via Cloudinary AI Studio.`
+        : `Synthesized 4 lookbook angles with model wearing ${req.productName} via Cloudinary AI Studio.`,
       images: generatedResults,
     };
   }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -111,22 +111,54 @@ export const ProductForm: React.FC = () => {
     }
   }, [watchedName, slugManuallyEdited, isEditMode, setValue]);
 
-  // Check for prefilled images from AI Studio
+  const location = useLocation();
+
+  // Check for prefilled images and product details from AI Studio
   useEffect(() => {
     if (!isEditMode) {
+      // 1. Check router state (from navigate('/products/new', { state: { ... } }))
+      const state = location.state as { images?: string[]; productName?: string; category?: string } | undefined;
+      if (state?.images && Array.isArray(state.images) && state.images.length > 0) {
+        const current = getValues('images') || [];
+        const merged = Array.from(new Set([...current, ...state.images]));
+        setValue('images', merged, { shouldDirty: true, shouldValidate: true });
+        if (state.productName && !getValues('name')) {
+          setValue('name', state.productName, { shouldDirty: true, shouldValidate: true });
+        }
+        if (state.category && !getValues('category')) {
+          setValue('category', state.category as any, { shouldDirty: true, shouldValidate: true });
+        }
+        toast.success(`✨ Transferred ${state.images.length} AI model angle(s) into product gallery!`);
+        return;
+      }
+
+      // 2. Check session storage fallback
       try {
         const prefilled = sessionStorage.getItem('offscript_prefill_images');
+        const prefilledName = sessionStorage.getItem('offscript_prefill_name');
+        const prefilledCat = sessionStorage.getItem('offscript_prefill_category');
+
         if (prefilled) {
           const urls = JSON.parse(prefilled);
           if (Array.isArray(urls) && urls.length > 0) {
-            setValue('images', urls, { shouldDirty: true, shouldValidate: true });
+            const current = getValues('images') || [];
+            const merged = Array.from(new Set([...current, ...urls]));
+            setValue('images', merged, { shouldDirty: true, shouldValidate: true });
             sessionStorage.removeItem('offscript_prefill_images');
-            toast.success(`Loaded ${urls.length} model angle(s) from AI Studio!`);
+            toast.success(`✨ Transferred ${urls.length} AI model angle(s) into product gallery!`);
           }
+        }
+        if (prefilledName && !getValues('name')) {
+          setValue('name', prefilledName, { shouldDirty: true, shouldValidate: true });
+          sessionStorage.removeItem('offscript_prefill_name');
+        }
+        if (prefilledCat && !getValues('category')) {
+          setValue('category', prefilledCat as any, { shouldDirty: true, shouldValidate: true });
+          sessionStorage.removeItem('offscript_prefill_category');
         }
       } catch {}
     }
-  }, [isEditMode, setValue]);
+  }, [isEditMode, location.state, setValue, getValues]);
 
   // Load existing product if edit mode or duplicate mode
   const { data: existingProduct, isLoading: isLoadingProduct } = useQuery<Product>({
@@ -624,7 +656,7 @@ export const ProductForm: React.FC = () => {
             />
 
             {/* 6. Product Images Gallery */}
-            <Card>
+            <Card id="product-images-gallery-card" className="scroll-mt-20">
               <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">

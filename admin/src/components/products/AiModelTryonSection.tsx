@@ -5,6 +5,7 @@ import {
   Layers,
   Upload,
   Check,
+  Plus,
   RefreshCw,
   Key,
   ExternalLink,
@@ -12,6 +13,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  ArrowDown,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -127,7 +129,6 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState<string>('');
   const [generatedShots, setGeneratedShots] = useState<GeneratedShot[]>([]);
-  const [appliedCount, setAppliedCount] = useState<number>(0);
 
   // Auto-sync garment from product images if updated
   useEffect(() => {
@@ -270,7 +271,6 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
 
         // Automatically add to the product's images array!
         onAddImages(newUrls);
-        setAppliedCount(newUrls.length);
 
         if (response.isDemo) {
           toast.info(response.message || 'Demo previews generated.');
@@ -612,39 +612,104 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
         {/* Generated 4 Shots Grid */}
         {generatedShots.length > 0 && (
           <div className="pt-3 border-t space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4" /> 4 AI Model Shots Synthesized
-              </span>
-              <span className="text-[11px] font-mono text-muted-foreground">
-                {appliedCount > 0 ? `${appliedCount} shots added to product gallery` : 'Added to product gallery'}
-              </span>
+            <div className="p-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>4 AI Model Angles Synthesized Wearing "{productName || 'Garment'}"</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    const newUrls = generatedShots.map((s) => s.imageUrl);
+                    onAddImages(newUrls);
+                    toast.success(`✨ Added ${newUrls.length} model angle(s) to Product Images Gallery`);
+                  }}
+                  className="h-7 text-[11px] font-mono gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add All to Product Gallery
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const el = document.getElementById('product-images-gallery-card');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className="h-7 text-[11px] font-mono gap-1"
+                >
+                  <ArrowDown className="h-3 w-3" />
+                  View in Gallery
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {generatedShots.map((shot) => (
-                <div
-                  key={shot.angleId}
-                  className="rounded-lg border overflow-hidden bg-card shadow-sm flex flex-col group relative"
-                >
-                  <div className="relative aspect-[3/4] bg-muted overflow-hidden">
-                    <img
-                      src={shot.imageUrl}
-                      alt={shot.angleName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-1.5 left-1.5">
-                      <Badge className="text-[9px] font-mono uppercase bg-black/80 text-white border-0 backdrop-blur-sm">
-                        {shot.angleId.toUpperCase()}
-                      </Badge>
+              {generatedShots.map((shot) => {
+                const isInGallery = safeImages.includes(shot.imageUrl);
+                return (
+                  <div
+                    key={shot.angleId}
+                    className="rounded-lg border overflow-hidden bg-card shadow-sm flex flex-col group relative"
+                  >
+                    <div className="relative aspect-[3/4] bg-muted overflow-hidden">
+                      <img
+                        src={shot.imageUrl}
+                        alt={shot.angleName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-1.5 left-1.5">
+                        <Badge className="text-[9px] font-mono uppercase bg-black/80 text-white border-0 backdrop-blur-sm">
+                          {shot.angleId.toUpperCase()}
+                        </Badge>
+                      </div>
+                      {isInGallery && (
+                        <div className="absolute top-1.5 right-1.5">
+                          <Badge className="text-[9px] font-mono uppercase bg-emerald-600 text-white border-0 backdrop-blur-sm flex items-center gap-1">
+                            <Check className="h-2.5 w-2.5" /> In Gallery
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2 border-t bg-card flex-1 flex flex-col justify-between gap-1.5">
+                      <div>
+                        <p className="text-[11px] font-semibold truncate leading-tight">{shot.angleName}</p>
+                        <p className="text-[9px] text-muted-foreground truncate mt-0.5">{shot.description}</p>
+                      </div>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isInGallery ? 'ghost' : 'outline'}
+                        onClick={() => {
+                          if (!isInGallery) {
+                            onAddImages([shot.imageUrl]);
+                            toast.success(`Added ${shot.angleName} to product images`);
+                          }
+                        }}
+                        className={`w-full h-6 text-[10px] font-mono gap-1 ${
+                          isInGallery
+                            ? 'text-emerald-600 bg-emerald-500/10 cursor-default'
+                            : 'hover:border-emerald-500 hover:text-emerald-600'
+                        }`}
+                      >
+                        {isInGallery ? (
+                          <>
+                            <Check className="h-2.5 w-2.5" /> Added to Product
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-2.5 w-2.5" /> Add to Product
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
-                  <div className="p-1.5 border-t bg-card">
-                    <p className="text-[11px] font-semibold truncate leading-tight">{shot.angleName}</p>
-                    <p className="text-[9px] text-muted-foreground truncate mt-0.5">{shot.description}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

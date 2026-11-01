@@ -13,6 +13,8 @@ import {
   Maximize2,
   RefreshCw,
   PlusCircle,
+  Plus,
+  CheckCircle2,
   Cloud,
   ChevronDown,
   ChevronUp,
@@ -244,11 +246,24 @@ export const AiStudio: React.FC = () => {
     toast.success('Image CDN URL copied to clipboard');
   };
 
-  const handleCreateProductWithShots = () => {
-    if (generatedShots.length === 0) return;
-    const urls = generatedShots.map((s) => s.imageUrl);
+  const handleCreateProductWithShots = (specificUrls?: string[]) => {
+    const urls = specificUrls && specificUrls.length > 0 ? specificUrls : generatedShots.map((s) => s.imageUrl);
+    if (urls.length === 0) {
+      toast.error('No generated images available to apply');
+      return;
+    }
     sessionStorage.setItem('offscript_prefill_images', JSON.stringify(urls));
-    navigate('/products/new');
+    if (productTitle) sessionStorage.setItem('offscript_prefill_name', productTitle);
+    if (category) sessionStorage.setItem('offscript_prefill_category', category);
+
+    toast.success(`Transferring ${urls.length} model angle(s) to Product Upload...`);
+    navigate('/products/new', {
+      state: {
+        images: urls,
+        productName: productTitle,
+        category: category,
+      },
+    });
   };
 
   return (
@@ -534,16 +549,39 @@ export const AiStudio: React.FC = () => {
                 <Button
                   type="button"
                   size="sm"
-                  onClick={handleCreateProductWithShots}
-                  className="gap-1.5 text-xs font-mono uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => handleCreateProductWithShots()}
+                  className="gap-1.5 text-xs font-mono uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
                 >
                   <PlusCircle className="h-3.5 w-3.5" />
-                  Create Product with Shots
+                  Use All Shots in Product Upload →
                 </Button>
               )}
             </CardHeader>
 
-            <CardContent className="pt-4 flex-1">
+            <CardContent className="pt-4 flex-1 space-y-4">
+              {/* Prominent Action Callout when Shots are ready */}
+              {generatedShots.length > 0 && (
+                <div className="p-3.5 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 font-mono">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      4 Angles Ready Wearing "{productTitle}"
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Transfer all 4 synthesized angles directly into the product catalog upload form.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => handleCreateProductWithShots()}
+                    className="gap-1.5 text-xs font-mono font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Use All In Product Upload →
+                  </Button>
+                </div>
+              )}
+
               {generatedShots.length === 0 ? (
                 <div className="h-96 flex flex-col items-center justify-center border border-dashed rounded-xl p-8 text-center text-muted-foreground">
                   <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
@@ -559,7 +597,7 @@ export const AiStudio: React.FC = () => {
                   {generatedShots.map((shot) => (
                     <div
                       key={shot.angleId}
-                      className="group relative rounded-xl border overflow-hidden bg-card transition-all hover:border-foreground/30 shadow-sm"
+                      className="group relative rounded-xl border overflow-hidden bg-card transition-all hover:border-foreground/30 shadow-sm flex flex-col"
                     >
                       <div className="relative aspect-[3/4] bg-muted overflow-hidden">
                         <img
@@ -599,9 +637,22 @@ export const AiStudio: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="p-2.5 border-t">
-                        <p className="text-xs font-semibold truncate">{shot.angleName}</p>
-                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{shot.description}</p>
+                      <div className="p-3 border-t bg-card flex-1 flex flex-col justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-semibold truncate">{shot.angleName}</p>
+                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{shot.description}</p>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCreateProductWithShots([shot.imageUrl])}
+                          className="w-full h-7 text-[11px] font-mono gap-1 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Use Shot in Product Upload
+                        </Button>
                       </div>
                     </div>
                   ))}
