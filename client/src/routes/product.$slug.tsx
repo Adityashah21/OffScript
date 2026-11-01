@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
+import tee from "@/assets/p-tee.jpg";
 import { getProduct, fetchProductBySlug, getAllProducts, products, type Product } from "@/data/products";
 import { Breadcrumbs } from "@/components/Editorial";
 import { PriceBadge, ProductCard } from "@/components/ProductCard";
@@ -31,7 +32,15 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
       {/* Mobile: swipe */}
       <div className="no-scrollbar -mx-5 flex snap-x snap-mandatory overflow-x-auto md:hidden" aria-label="Product images">
         {images.map((src, i) => (
-          <img key={i} src={src} alt={`${name}, image ${i + 1}`} className="aspect-[4/5] w-full shrink-0 snap-center object-cover" />
+          <img
+            key={i}
+            src={src}
+            alt={`${name}, image ${i + 1}`}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = tee;
+            }}
+            className="aspect-[4/5] w-full shrink-0 snap-center object-cover"
+          />
         ))}
       </div>
       {images.length > 1 && <p className="eyebrow mt-2 text-center text-muted-foreground md:hidden">Swipe · {images.length} images</p>}
@@ -40,12 +49,27 @@ function ProductGallery({ images, name }: { images: string[]; name: string }) {
         <div className="flex flex-col gap-3">
           {images.map((src, i) => (
             <button key={i} onClick={() => setActive(i)} aria-label={`Show image ${i + 1}`} aria-pressed={active === i} className={cn("aspect-[4/5] overflow-hidden border-2", active === i ? "border-foreground" : "border-transparent")}>
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <img
+                src={src}
+                alt=""
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = tee;
+                }}
+                className="h-full w-full object-cover"
+              />
             </button>
           ))}
         </div>
         <div className="aspect-[4/5] overflow-hidden bg-secondary">
-          <img key={active} src={images[active]} alt={name} className="reveal h-full w-full object-cover" />
+          <img
+            key={active}
+            src={images[active]}
+            alt={name}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = tee;
+            }}
+            className="reveal h-full w-full object-cover"
+          />
         </div>
       </div>
     </div>

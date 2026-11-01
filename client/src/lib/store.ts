@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
+import { useMounted } from "./useMounted";
 
-/** Tiny localStorage-backed stores (frontend-only v1). */
+/** Tiny localStorage-backed stores with SSR hydration safety. */
 function createStore<T>(key: string, fallback: T, storage: () => Storage | undefined = () => localStorage) {
   const listeners = new Set<() => void>();
   let cache: T | undefined;
@@ -28,7 +29,11 @@ function createStore<T>(key: string, fallback: T, storage: () => Storage | undef
     listeners.add(l);
     return () => listeners.delete(l);
   };
-  const use = () => useSyncExternalStore(subscribe, read, () => fallback);
+  const use = () => {
+    const isMounted = useMounted();
+    const val = useSyncExternalStore(subscribe, read, () => fallback);
+    return isMounted ? val : fallback;
+  };
   return { read, write, use };
 }
 

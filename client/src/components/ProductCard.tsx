@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
 import type { Product } from "@/data/products";
+import tee from "@/assets/p-tee.jpg";
 import { inr } from "@/lib/format";
 import { isCodEligible } from "@/lib/order";
 import { WishlistButton } from "./WishlistButton";
@@ -30,6 +31,9 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             loading="lazy"
             width={768}
             height={960}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = tee;
+            }}
             className="img-zoom absolute inset-0 h-full w-full object-cover group-hover:scale-[1.04]"
           />
           {p.images[1] && (
@@ -38,6 +42,9 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
               alt=""
               aria-hidden
               loading="lazy"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
               className="img-zoom absolute inset-0 h-full w-full object-cover opacity-0 group-hover:opacity-100 group-hover:scale-[1.04]"
             />
           )}

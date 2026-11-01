@@ -70,7 +70,12 @@ export function SiteHeader() {
             <button onClick={() => setSearchOpen(true)} aria-label="Search" className="inline-flex h-11 w-11 items-center justify-center hover:text-accent">
               <Search className="h-5 w-5" strokeWidth={1.5} />
             </button>
-            <Link to="/wishlist" aria-label={`Wishlist, ${saved.length} saved`} className="relative inline-flex h-11 w-11 items-center justify-center hover:text-accent">
+            <Link
+              to="/wishlist"
+              aria-label={`Wishlist, ${saved.length} saved`}
+              suppressHydrationWarning
+              className="relative inline-flex h-11 w-11 items-center justify-center hover:text-accent"
+            >
               <Heart className="h-5 w-5" strokeWidth={1.5} />
               {saved.length > 0 && (
                 <span className="absolute right-1 top-1.5 flex h-4 min-w-4 items-center justify-center bg-accent px-1 text-[10px] font-bold text-accent-foreground">
@@ -78,7 +83,13 @@ export function SiteHeader() {
                 </span>
               )}
             </Link>
-            <Link to="/profile" aria-label="My Profile and Orders" className="relative inline-flex h-11 w-11 items-center justify-center hover:text-accent" title="My Profile & Orders">
+            <Link
+              to="/profile"
+              aria-label="My Profile and Orders"
+              suppressHydrationWarning
+              className="relative inline-flex h-11 w-11 items-center justify-center hover:text-accent"
+              title="My Profile & Orders"
+            >
               <User className="h-5 w-5" strokeWidth={1.5} />
               {profile.orderRefs?.length > 0 && (
                 <span className="absolute right-1.5 top-2 h-2 w-2 rounded-full bg-accent" />

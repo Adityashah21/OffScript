@@ -13,6 +13,8 @@ import everyday from "@/assets/cat-everyday.jpg";
 import her from "@/assets/cat-her.jpg";
 import his from "@/assets/cat-his.jpg";
 import acc from "@/assets/cat-accessories.jpg";
+import campaign from "@/assets/campaign.jpg";
+import cover from "@/assets/cover.jpg";
 
 /**
  * ILLUSTRATIVE MOCK DATA. Not real inventory, retailers, or prices.
@@ -392,11 +394,73 @@ export const products: Product[] = [
   },
 ];
 
+export const BACKEND_PROD_URL = "https://offscript-p9rk.onrender.com";
+
+const SEED_IMAGE_MAP: Record<string, string> = {
+  "p-tee.jpg": tee,
+  "p-cream-tee.jpg": creamTee,
+  "p-shirt.jpg": shirt,
+  "p-denim.jpg": denim,
+  "p-sneakers.jpg": sneakers,
+  "p-knit.jpg": knit,
+  "p-bag.jpg": bag,
+  "p-cargo.jpg": cargo,
+  "p-dress.jpg": dress,
+  "hero.jpg": hero,
+  "cat-streetwear.jpg": street,
+  "cat-everyday.jpg": everyday,
+  "cat-her.jpg": her,
+  "cat-his.jpg": his,
+  "cat-accessories.jpg": acc,
+  "campaign.jpg": campaign,
+  "cover.jpg": cover,
+};
+
+export function resolveImageUrl(url: string | undefined): string {
+  if (!url || typeof url !== "string") return tee;
+
+  // 1. Direct match or filename match against known bundled seed images
+  for (const [filename, asset] of Object.entries(SEED_IMAGE_MAP)) {
+    if (url.endsWith(`/${filename}`) || url.endsWith(filename) || url === filename) {
+      return asset;
+    }
+  }
+
+  // 2. Full URLs (http/https/data:)
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    const lower = url.toLowerCase();
+    for (const [filename, asset] of Object.entries(SEED_IMAGE_MAP)) {
+      if (lower.includes(`/seed/${filename}`) || lower.endsWith(`/${filename}`)) {
+        return asset;
+      }
+    }
+    // Fix stale localhost backend links in production
+    if (url.includes("localhost:5000") || url.includes("localhost:5001")) {
+      return url.replace(/http:\/\/localhost:500[01]/, BACKEND_PROD_URL);
+    }
+    return url;
+  }
+
+  // 3. Relative server URLs (e.g. /static/...)
+  if (url.startsWith("/static/") || url.startsWith("static/")) {
+    const clean = url.startsWith("/") ? url : `/${url}`;
+    const filename = clean.split("/").pop();
+    if (filename && SEED_IMAGE_MAP[filename]) {
+      return SEED_IMAGE_MAP[filename];
+    }
+    return `${BACKEND_PROD_URL}${clean}`;
+  }
+
+  return url;
+}
+
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  (typeof window !== "undefined" && window.location.hostname !== "localhost"
-    ? "https://offscript-p9rk.onrender.com"
-    : "http://localhost:5000");
+  (import.meta.env.PROD
+    ? BACKEND_PROD_URL
+    : (typeof window !== "undefined" && window.location.hostname !== "localhost"
+        ? BACKEND_PROD_URL
+        : "http://localhost:5000"));
 
 // In-memory list of live products loaded from the database
 let liveProducts: Product[] = [];
@@ -430,17 +494,31 @@ export function setLiveProducts(newProducts: Product[]) {
   notifyListeners();
 }
 
-// Restore cached products on load
-if (typeof window !== "undefined") {
+/**
+ * Hydration-safe cache restore. Called inside useEffect or after initial mount,
+ * ensuring SSR and initial client hydration match identically.
+ */
+export function restoreCachedProducts(): Product[] {
+  if (typeof window === "undefined") return [];
   try {
     const cached = localStorage.getItem("offscript_live_products");
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        liveProducts = parsed;
+        const normalized: Product[] = parsed.map((item: any) => {
+          const rawImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [tee];
+          return {
+            ...item,
+            images: rawImages.map((img: string) => resolveImageUrl(img)),
+          };
+        });
+        liveProducts = normalized;
+        notifyListeners();
+        return normalized;
       }
     }
   } catch {}
+  return [];
 }
 
 export function getLiveUploadedProducts(): Product[] {
@@ -471,45 +549,53 @@ export const getProduct = (slug: string) => {
 export async function fetchLiveProducts(): Promise<Product[]> {
   try {
     const res = await fetch(`${API_URL}/api/products?limit=100`);
-    if (!res.ok) return liveProducts;
+    if (!res.ok) {
+      restoreCachedProducts();
+      return liveProducts;
+    }
     const data = await res.json();
     const items: any[] = data.items || data;
     if (Array.isArray(items) && items.length > 0) {
-      const formatted: Product[] = items.map((item) => ({
-        id: item._id || item.id || item.slug,
-        slug: item.slug,
-        name: item.name,
-        description: item.description,
-        category: item.category,
-        subcategory: item.subcategory || item.category,
-        gender: item.gender || "unisex",
-        retailer: item.retailer || "OFFSCRIPT",
-        brand: item.brand || "OFFSCRIPT",
-        price: item.price,
-        originalPrice: item.originalPrice,
-        currency: "INR",
-        images: Array.isArray(item.images) && item.images.length > 0 ? item.images : [tee],
-        availableSizes: item.availableSizes || ["S", "M", "L"],
-        availableColors: item.availableColors || ["Black"],
-        tags: item.tags || [],
-        collectionIds: item.collectionIds || ["discover", "streetwear"],
-        affiliateUrl: item.affiliateUrl || null,
-        purchaseMode: item.purchaseMode || (item.codEnabled ? "authorized_cod" : "affiliate"),
-        codEnabled: Boolean(item.codEnabled),
-        shippingCharge: item.shippingCharge || 0,
-        inStock: item.inStock !== false,
-        isFeatured: Boolean(item.isFeatured),
-        isNew: Boolean(item.isNew),
-        isEditorsPick: Boolean(item.isEditorsPick),
-        material: item.material,
-        fit: item.fit,
-        lastUpdatedAt: item.lastUpdatedAt || new Date().toISOString(),
-      }));
+      const formatted: Product[] = items.map((item) => {
+        const rawImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [tee];
+        const normalizedImages = rawImages.map((img: string) => resolveImageUrl(img));
+        return {
+          id: item._id || item.id || item.slug,
+          slug: item.slug,
+          name: item.name,
+          description: item.description,
+          category: item.category,
+          subcategory: item.subcategory || item.category,
+          gender: item.gender || "unisex",
+          retailer: item.retailer || "OFFSCRIPT",
+          brand: item.brand || "OFFSCRIPT",
+          price: item.price,
+          originalPrice: item.originalPrice,
+          currency: "INR",
+          images: normalizedImages,
+          availableSizes: item.availableSizes || ["S", "M", "L"],
+          availableColors: item.availableColors || ["Black"],
+          tags: item.tags || [],
+          collectionIds: item.collectionIds || ["discover", "streetwear"],
+          affiliateUrl: item.affiliateUrl || null,
+          purchaseMode: item.purchaseMode || (item.codEnabled ? "authorized_cod" : "affiliate"),
+          codEnabled: Boolean(item.codEnabled),
+          shippingCharge: item.shippingCharge || 0,
+          inStock: item.inStock !== false,
+          isFeatured: Boolean(item.isFeatured),
+          isNew: Boolean(item.isNew),
+          isEditorsPick: Boolean(item.isEditorsPick),
+          material: item.material,
+          fit: item.fit,
+          lastUpdatedAt: item.lastUpdatedAt || new Date().toISOString(),
+        };
+      });
       setLiveProducts(formatted);
       return formatted;
     }
   } catch (err) {
     console.warn("Failed to fetch live products from API:", err);
+    restoreCachedProducts();
   }
   return liveProducts;
 }
@@ -523,6 +609,8 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
     if (!res.ok) return null;
     const item = await res.json();
     if (item && item.slug) {
+      const rawImages = Array.isArray(item.images) && item.images.length > 0 ? item.images : [tee];
+      const normalizedImages = rawImages.map((img: string) => resolveImageUrl(img));
       const formatted: Product = {
         id: item._id || item.id || item.slug,
         slug: item.slug,
@@ -536,7 +624,7 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
         price: item.price,
         originalPrice: item.originalPrice,
         currency: "INR",
-        images: Array.isArray(item.images) && item.images.length > 0 ? item.images : [tee],
+        images: normalizedImages,
         availableSizes: item.availableSizes || ["S", "M", "L"],
         availableColors: item.availableColors || ["Black"],
         tags: item.tags || [],

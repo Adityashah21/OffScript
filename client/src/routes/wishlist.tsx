@@ -20,7 +20,7 @@ function WishlistPage() {
     <div className="mx-auto max-w-[1600px] px-5 pt-10 md:px-10">
       <p className="eyebrow text-accent">Saved on this device</p>
       <h1 className="display-xl mt-3 uppercase">Wishlist</h1>
-      <p className="mt-3 eyebrow text-muted-foreground">{items.length} {items.length === 1 ? "piece" : "pieces"}</p>
+      <p className="mt-3 eyebrow text-muted-foreground" suppressHydrationWarning>{items.length} {items.length === 1 ? "piece" : "pieces"}</p>
       <div className="mt-10">
         {items.length === 0 ? (
           <EmptyState

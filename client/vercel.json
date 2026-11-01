@@ -27,5 +27,11 @@
       "destination": "/collections/discover",
       "permanent": false
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/static/:path*",
+      "destination": "https://offscript-p9rk.onrender.com/static/:path*"
+    }
   ]
 }

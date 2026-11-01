@@ -115,7 +115,7 @@ export function CatalogPage({ slug, hero }: { slug: string; hero?: React.ReactNo
 
       <section className="mx-auto max-w-[1600px] px-5 pt-10 md:px-10">
         <div className="sticky top-14 z-20 -mx-5 flex items-center justify-between gap-4 border-y bg-background px-5 py-3 md:top-16 md:-mx-10 md:px-10">
-          <p className="eyebrow" aria-live="polite">
+          <p className="eyebrow" aria-live="polite" suppressHydrationWarning>
             {list.length} {list.length === 1 ? "piece" : "pieces"}
           </p>
           <div className="flex items-center gap-2">

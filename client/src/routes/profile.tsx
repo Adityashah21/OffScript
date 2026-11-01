@@ -298,10 +298,10 @@ export function ProfilePage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="eyebrow text-accent">Personal Account</span>
-            <h1 className="display-lg mt-2">
+            <h1 className="display-lg mt-2" suppressHydrationWarning>
               {isAuthenticated && user ? user.name : (profile.fullName ? profile.fullName : "My Profile & Orders")}
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground" suppressHydrationWarning>
               {isAuthenticated && user
                 ? `Signed in as ${user.email} • Synced with OFFSCRIPT Cloud`
                 : profile.mobile
@@ -472,6 +472,7 @@ export function ProfilePage() {
                 <label className="eyebrow mb-1 block">Full Name</label>
                 <input
                   type="text"
+                  autoComplete="name"
                   value={editAddress.fullName}
                   onChange={(e) => setEditAddress({ ...editAddress, fullName: e.target.value })}
                   placeholder="e.g. Aditya Shah"
@@ -484,6 +485,7 @@ export function ProfilePage() {
                 <label className="eyebrow mb-1 block">Mobile Number (10 digits)</label>
                 <input
                   type="tel"
+                  autoComplete="tel"
                   value={editAddress.mobile}
                   onChange={(e) => setEditAddress({ ...editAddress, mobile: e.target.value })}
                   placeholder="9876543210"
@@ -498,6 +500,7 @@ export function ProfilePage() {
                 </label>
                 <input
                   type="email"
+                  autoComplete="email"
                   value={editAddress.email}
                   onChange={(e) => setEditAddress({ ...editAddress, email: e.target.value })}
                   placeholder="name@example.com"
@@ -509,6 +512,7 @@ export function ProfilePage() {
                 <label className="eyebrow mb-1 block">House / Flat No.</label>
                 <input
                   type="text"
+                  autoComplete="address-line1"
                   value={editAddress.house}
                   onChange={(e) => setEditAddress({ ...editAddress, house: e.target.value })}
                   placeholder="Flat 402, Skyline Heights"
@@ -521,6 +525,7 @@ export function ProfilePage() {
                 <label className="eyebrow mb-1 block">Street / Locality</label>
                 <input
                   type="text"
+                  autoComplete="address-line2"
                   value={editAddress.street}
                   onChange={(e) => setEditAddress({ ...editAddress, street: e.target.value })}
                   placeholder="MG Road, Bandra West"
@@ -546,6 +551,7 @@ export function ProfilePage() {
                 <label className="eyebrow mb-1 block">City</label>
                 <input
                   type="text"
+                  autoComplete="address-level2"
                   value={editAddress.city}
                   onChange={(e) => setEditAddress({ ...editAddress, city: e.target.value })}
                   placeholder="Mumbai"
@@ -558,6 +564,7 @@ export function ProfilePage() {
                 <label className="eyebrow mb-1 block">State</label>
                 <select
                   value={editAddress.state}
+                  autoComplete="address-level1"
                   onChange={(e) => setEditAddress({ ...editAddress, state: e.target.value })}
                   className="field"
                   required
@@ -575,6 +582,7 @@ export function ProfilePage() {
                 <label className="eyebrow mb-1 block">PIN Code</label>
                 <input
                   type="text"
+                  autoComplete="postal-code"
                   maxLength={6}
                   value={editAddress.pin}
                   onChange={(e) => setEditAddress({ ...editAddress, pin: e.target.value })}

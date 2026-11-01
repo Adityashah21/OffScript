@@ -85,7 +85,7 @@ function CoverHero() {
           </div>
         </div>
         <div className="eyebrow mt-8 flex justify-between border-t border-paper/30 pt-3 opacity-80">
-          <span>On the cover: {heroDropName}</span>
+          <span suppressHydrationWarning>On the cover: {heroDropName}</span>
           <span className="hidden md:inline">↓ The Finds Wall</span>
         </div>
       </div>

@@ -146,6 +146,7 @@ export function LoginPage() {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@domain.com"
@@ -163,6 +164,7 @@ export function LoginPage() {
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -192,6 +194,7 @@ export function LoginPage() {
               <input
                 type="text"
                 required
+                autoComplete="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Aarav Verma"
@@ -209,6 +212,7 @@ export function LoginPage() {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@domain.com"
@@ -225,6 +229,7 @@ export function LoginPage() {
               <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 type="tel"
+                autoComplete="tel"
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
                 placeholder="9876543210"
@@ -243,6 +248,7 @@ export function LoginPage() {
                 type="password"
                 required
                 minLength={6}
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

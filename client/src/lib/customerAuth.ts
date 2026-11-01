@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { useMounted } from "./useMounted";
 import { updateCustomerProfile, type CustomerProfile } from "./store";
 
 const TOKEN_KEY = "offscript:customer_jwt";
@@ -106,8 +107,12 @@ function subscribe(cb: () => void) {
 }
 
 export function useCustomerAuth() {
-  const user = useSyncExternalStore(subscribe, getCustomerUser, () => null);
-  const token = useSyncExternalStore(subscribe, getCustomerToken, () => null);
+  const isMounted = useMounted();
+  const rawUser = useSyncExternalStore(subscribe, getCustomerUser, () => null);
+  const rawToken = useSyncExternalStore(subscribe, getCustomerToken, () => null);
+
+  const user = isMounted ? rawUser : null;
+  const token = isMounted ? rawToken : null;
 
   return {
     isAuthenticated: Boolean(token && user),
