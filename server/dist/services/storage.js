@@ -24,17 +24,21 @@ export class LocalStorageService {
 }
 export class CloudinaryStorageService {
     constructor() {
+        let cloudName = env.CLOUDINARY_CLOUD_NAME || 'du66wxds4';
         if (env.CLOUDINARY_URL) {
-            cloudinary.config({ cloudinary_url: env.CLOUDINARY_URL });
+            const match = env.CLOUDINARY_URL.match(/@([a-zA-Z0-9_-]+)$/);
+            if (match)
+                cloudName = match[1];
         }
-        else {
-            cloudinary.config({
-                cloud_name: env.CLOUDINARY_CLOUD_NAME,
-                api_key: env.CLOUDINARY_API_KEY,
-                api_secret: env.CLOUDINARY_API_SECRET,
-                secure: true,
-            });
+        if (cloudName === 'off-Script') {
+            cloudName = 'du66wxds4';
         }
+        cloudinary.config({
+            cloud_name: cloudName,
+            api_key: env.CLOUDINARY_API_KEY || '938577445883635',
+            api_secret: env.CLOUDINARY_API_SECRET || 'r319PQCKIWfgPLuqDAyXv0zaHw0',
+            secure: true,
+        });
     }
     isCloud() {
         return true;

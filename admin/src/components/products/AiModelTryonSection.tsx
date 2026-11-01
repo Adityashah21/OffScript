@@ -255,7 +255,7 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
         angles: ['front', 'side_45', 'back', 'detail'],
       };
 
-      setGenerationStep('Synthesizing 4 angles (Front, 45° Turn, Back, Detail) with Imagen 3...');
+      setGenerationStep('Synthesizing 4 studio angles (Front, 45° Side, Back, Detail)...');
 
       const response = await api.post<{
         success: boolean;
@@ -275,7 +275,10 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
         if (response.isDemo) {
           toast.info(response.message || 'Demo previews generated.');
         } else {
-          toast.success(`✨ Synthesized and added ${newUrls.length} Gemini AI model angles to your product!`);
+          toast.success(
+            response.message || `✨ Generated and added ${newUrls.length} AI model angles to your product!`,
+            { duration: 6000 }
+          );
         }
       } else {
         toast.error('No images generated');

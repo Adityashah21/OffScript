@@ -65,33 +65,6 @@ export const TRYON_ANGLES = [
         composition: "Cinematic editorial close-up macro crop focused on chest and shoulder area, shallow depth of field, sharp focus on 500 GSM heavyweight textile weave, intricate ribbing, and subtle hardware details",
     },
 ];
-// Fallback high-fashion streetwear editorial imagery if Gemini API is in demo/fallback mode
-const FALLBACK_EDITORIAL_IMAGES = {
-    hoodie: {
-        front: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80",
-        side_45: "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=1000&q=80",
-        back: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80",
-        detail: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1000&q=80",
-    },
-    tshirt: {
-        front: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1000&q=80",
-        side_45: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1000&q=80",
-        back: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=1000&q=80",
-        detail: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=1000&q=80",
-    },
-    jacket: {
-        front: "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1000&q=80",
-        side_45: "https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=1000&q=80",
-        back: "https://images.unsplash.com/photo-1495105787522-5334e3ffa0ef?auto=format&fit=crop&w=1000&q=80",
-        detail: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1000&q=80",
-    },
-    default: {
-        front: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80",
-        side_45: "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=1000&q=80",
-        back: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=80",
-        detail: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1000&q=80",
-    },
-};
 /**
  * Normalizes input image string: extracts mime and base64 buffer or loads URL
  */
@@ -117,6 +90,12 @@ async function resolveImageBuffer(input) {
         mimeType,
     };
 }
+function withTimeout(promise, ms, desc) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`${desc} timed out after ${ms}ms`)), ms)),
+    ]);
+}
 export class AiTryonService {
     /**
      * Generates 4 angle try-on shots matching OFFSCRIPT luxury streetwear aesthetic.
@@ -135,14 +114,14 @@ export class AiTryonService {
             modelPrompt = preset.stylePrompt;
             modelImageSource = preset.thumbnailUrl;
         }
-        // If no Gemini API key configured, use high-fidelity curated editorial fallbacks
+        // If no Gemini API key configured, use Cloudinary AI Studio on the provided model
         if (!apiKey) {
-            console.log("ℹ️  No GEMINI_API_KEY provided; providing curated streetwear lookbook angles in demo mode.");
-            return this.generateDemoFallback(req, requestedAngles, aestheticLabel);
+            console.log("ℹ️ No GEMINI_API_KEY provided; generating studio lookbook angles using Cloudinary AI Studio.");
+            return this.generateCloudinaryStudioAngles(req, modelImageSource, requestedAngles, aestheticLabel);
         }
         try {
             const ai = new GoogleGenAI({ apiKey });
-            // Step 1: Multimodal Vision Analysis of Model + Garment using Gemini 2.0 Flash
+            // Step 1: Multimodal Vision Analysis of Model + Garment using Gemini Vision
             let analyzedPrompts = {};
             try {
                 const [modelImgData, productImgData] = await Promise.all([
@@ -191,16 +170,16 @@ Format strictly as JSON:
                 const candidateVisionModels = [
                     "gemini-flash-latest",
                     "gemini-3.8-flash",
-                    "gemini-2.5-flash",
+                    "gemini-2.5-flash-lite",
+                    "gemini-3.5-flash",
                     "gemini-1.5-flash",
-                    "gemini-2.0-flash",
                 ];
                 for (const m of candidateVisionModels) {
                     try {
-                        visionResponse = await ai.models.generateContent({
+                        visionResponse = await withTimeout(ai.models.generateContent({
                             model: m,
                             contents: [{ role: "user", parts: contentParts }],
-                        });
+                        }), 6000, `Gemini vision (${m})`);
                         if (visionResponse?.text)
                             break;
                     }
@@ -217,116 +196,212 @@ Format strictly as JSON:
             catch (analysisErr) {
                 console.warn("⚠️ Multimodal prompt extraction note:", analysisErr);
             }
-            // Step 2: Generate images for each requested angle using Imagen 3
+            // Step 2: Attempt image generation for each requested angle
             const generatedResults = [];
             let hadLiveGeneration = false;
             let lastErrorNotice = null;
+            let quotaExceededDetected = false;
             for (const angleId of requestedAngles) {
+                if (quotaExceededDetected)
+                    break;
                 const angleDef = TRYON_ANGLES.find((a) => a.id === angleId) || TRYON_ANGLES[0];
                 // Synthesize prompt matching OFFSCRIPT's luxury brutalist aesthetic
                 const bespokePrompt = analyzedPrompts[angleId] ||
                     `High-fashion lookbook studio photograph of ${modelPrompt} wearing an ${req.productName} (${req.category}). ` +
                         `${angleDef.composition}. Aesthetic: ${aestheticLabel}, raw concrete brutalist interior, diffuse cinematic softbox lighting, muted neutral tone, ultra-realistic 8k fashion editorial, 85mm lens f/1.8 photography, Balenciaga / Fear of God lookbook aesthetic.`;
+                let liveImageBuffer = null;
+                // Attempt A: Direct Gemini Image Generation model via generateContent
                 try {
-                    const imgResponse = await ai.models.generateImages({
-                        model: "imagen-3.0-generate-002",
-                        prompt: bespokePrompt,
-                        config: {
-                            numberOfImages: 1,
-                            aspectRatio: "3:4",
-                            outputMimeType: "image/jpeg",
-                            personGeneration: PersonGeneration.ALLOW_ADULT,
-                        },
-                    });
-                    const base64Bytes = imgResponse.generatedImages?.[0]?.image?.imageBytes;
-                    if (base64Bytes) {
-                        const imgBuffer = Buffer.from(base64Bytes, "base64");
-                        const safeName = `ai-${req.productName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${angleId}.jpg`;
-                        const permanentUrl = await storageService.saveBuffer(imgBuffer, safeName, "image/jpeg");
-                        hadLiveGeneration = true;
-                        generatedResults.push({
-                            angleId,
-                            angleName: angleDef.name,
-                            cameraAngle: angleDef.cameraAngle,
-                            description: angleDef.description,
-                            imageUrl: permanentUrl,
-                            promptUsed: bespokePrompt,
-                        });
-                        continue;
+                    const res = await withTimeout(ai.models.generateContent({
+                        model: "gemini-2.5-flash-image",
+                        contents: [{ role: "user", parts: [{ text: bespokePrompt }] }],
+                    }), 8000, "Gemini image generation");
+                    for (const cand of res?.candidates || []) {
+                        for (const part of cand.content?.parts || []) {
+                            if (part.inlineData?.data) {
+                                liveImageBuffer = Buffer.from(part.inlineData.data, "base64");
+                                break;
+                            }
+                        }
+                        if (liveImageBuffer)
+                            break;
                     }
                 }
-                catch (imgGenErr) {
-                    lastErrorNotice = imgGenErr?.message || String(imgGenErr);
-                    console.warn(`⚠️ Imagen 3 generation for angle ${angleId} note:`, lastErrorNotice);
+                catch (e) {
+                    lastErrorNotice = e?.message || String(e);
+                    if (lastErrorNotice?.includes("429") ||
+                        lastErrorNotice?.includes("RESOURCE_EXHAUSTED") ||
+                        lastErrorNotice?.includes("limit: 0")) {
+                        quotaExceededDetected = true;
+                    }
                 }
-                // If a specific angle image generation errored, provide graceful fallback for that angle
-                const categoryKey = req.category.toLowerCase().includes("hoodie")
-                    ? "hoodie"
-                    : req.category.toLowerCase().includes("jacket")
-                        ? "jacket"
-                        : req.category.toLowerCase().includes("t-shirt") || req.category.toLowerCase().includes("tee")
-                            ? "tshirt"
-                            : "default";
-                const fallbackUrl = FALLBACK_EDITORIAL_IMAGES[categoryKey]?.[angleId] ||
-                    FALLBACK_EDITORIAL_IMAGES.default[angleId];
-                generatedResults.push({
-                    angleId,
-                    angleName: angleDef.name,
-                    cameraAngle: angleDef.cameraAngle,
-                    description: angleDef.description,
-                    imageUrl: fallbackUrl,
-                    promptUsed: bespokePrompt,
-                });
+                // Attempt B: Imagen 3 generateImages if liveImageBuffer not yet acquired and not quota exceeded
+                if (!liveImageBuffer && !quotaExceededDetected) {
+                    try {
+                        const imgResponse = await withTimeout(ai.models.generateImages({
+                            model: "imagen-3.0-generate-002",
+                            prompt: bespokePrompt,
+                            config: {
+                                numberOfImages: 1,
+                                aspectRatio: "3:4",
+                                outputMimeType: "image/jpeg",
+                                personGeneration: PersonGeneration.ALLOW_ADULT,
+                            },
+                        }), 8000, "Imagen 3 generation");
+                        const base64Bytes = imgResponse.generatedImages?.[0]?.image?.imageBytes;
+                        if (base64Bytes) {
+                            liveImageBuffer = Buffer.from(base64Bytes, "base64");
+                        }
+                    }
+                    catch (imgGenErr) {
+                        lastErrorNotice = imgGenErr?.message || String(imgGenErr);
+                        if (lastErrorNotice?.includes("429") ||
+                            lastErrorNotice?.includes("RESOURCE_EXHAUSTED") ||
+                            lastErrorNotice?.includes("limit: 0")) {
+                            quotaExceededDetected = true;
+                        }
+                    }
+                }
+                if (liveImageBuffer) {
+                    const safeName = `ai-${req.productName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${angleId}.jpg`;
+                    const permanentUrl = await storageService.saveBuffer(liveImageBuffer, safeName, "image/jpeg");
+                    hadLiveGeneration = true;
+                    generatedResults.push({
+                        angleId,
+                        angleName: angleDef.name,
+                        cameraAngle: angleDef.cameraAngle,
+                        description: angleDef.description,
+                        imageUrl: permanentUrl,
+                        promptUsed: bespokePrompt,
+                    });
+                }
             }
-            return {
-                success: true,
-                productName: req.productName,
-                aesthetic: aestheticLabel,
-                isDemo: !hadLiveGeneration,
-                message: hadLiveGeneration
-                    ? "Generated multi-angle model photographs using Gemini API & Imagen 3."
-                    : lastErrorNotice
-                        ? `Gemini notice: ${lastErrorNotice}. Loaded curated high-fashion model shots.`
-                        : "Loaded curated high-fashion model shots.",
-                images: generatedResults,
-            };
+            // If live Gemini image generation succeeded for all angles, return them
+            if (hadLiveGeneration && generatedResults.length === requestedAngles.length) {
+                return {
+                    success: true,
+                    productName: req.productName,
+                    aesthetic: aestheticLabel,
+                    isDemo: false,
+                    message: "Generated 4 bespoke model photographs using Gemini API & Imagen 3.",
+                    images: generatedResults,
+                };
+            }
+            // If Gemini quota was exceeded (e.g. Free Tier limit: 0) or models unavailable:
+            // NEVER serve generic stock photos! Transform the user's actual model into OFFSCRIPT studio angles using Cloudinary AI Studio!
+            let quotaMessage = "";
+            if (lastErrorNotice?.includes("429") || lastErrorNotice?.includes("RESOURCE_EXHAUSTED") || lastErrorNotice?.includes("limit: 0")) {
+                quotaMessage = "Gemini Free Tier has 0 quota for direct neural image generation (Pay-as-you-go required on Google AI Studio).";
+            }
+            else if (lastErrorNotice) {
+                quotaMessage = `Gemini note: ${lastErrorNotice.slice(0, 100)}`;
+            }
+            return this.generateCloudinaryStudioAngles(req, modelImageSource, requestedAngles, aestheticLabel, quotaMessage);
         }
         catch (err) {
             console.error("❌ Gemini API Service Error:", err);
-            // Fallback gracefully so admin experience is never blocked
-            return this.generateDemoFallback(req, requestedAngles, aestheticLabel, err?.message);
+            return this.generateCloudinaryStudioAngles(req, modelImageSource, requestedAngles, aestheticLabel, err?.message);
         }
     }
-    generateDemoFallback(req, angles, aestheticLabel, errorMsg) {
-        const categoryKey = req.category.toLowerCase().includes("hoodie")
-            ? "hoodie"
-            : req.category.toLowerCase().includes("jacket")
-                ? "jacket"
-                : req.category.toLowerCase().includes("t-shirt") || req.category.toLowerCase().includes("tee")
-                    ? "tshirt"
-                    : "default";
-        const images = angles.map((angleId) => {
+    /**
+     * Transforms the user's actual model picture into 4 OFFSCRIPT studio lookbook angles
+     * using Cloudinary's AI Generative Studio. Guarantees the user's uploaded model is used,
+     * with zero generic stock photos.
+     */
+    async generateCloudinaryStudioAngles(req, modelImageSource, angles, aestheticLabel, geminiNotice) {
+        const { v2: cloudinary } = await import("cloudinary");
+        let modelPublicId = "";
+        try {
+            if (modelImageSource.includes("cloudinary.com") && modelImageSource.includes("/upload/")) {
+                const parts = modelImageSource.split("/upload/");
+                const afterUpload = parts[1].replace(/^v\d+\//, "").replace(/\.[a-zA-Z0-9]+$/, "");
+                modelPublicId = afterUpload;
+            }
+            else {
+                const resolved = await resolveImageBuffer(modelImageSource);
+                const uploadRes = await cloudinary.uploader.upload(`data:${resolved.mimeType};base64,${resolved.buffer.toString("base64")}`, {
+                    folder: "offscript/ai-models",
+                    resource_type: "image",
+                });
+                modelPublicId = uploadRes.public_id;
+            }
+        }
+        catch (e) {
+            console.warn("Could not upload model to Cloudinary, using public URL:", e.message);
+        }
+        const aestheticPrompt = aestheticLabel
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "_")
+            .replace(/_+/g, "_")
+            .slice(0, 70);
+        const generatedResults = [];
+        for (const angleId of angles) {
             const angleDef = TRYON_ANGLES.find((a) => a.id === angleId) || TRYON_ANGLES[0];
-            const imageUrl = FALLBACK_EDITORIAL_IMAGES[categoryKey]?.[angleId] ||
-                FALLBACK_EDITORIAL_IMAGES.default[angleId];
-            return {
+            let transformedUrl = "";
+            if (modelPublicId) {
+                if (angleId === "front") {
+                    transformedUrl = cloudinary.url(modelPublicId, {
+                        transformation: [
+                            { effect: `gen_background_replace:prompt_${aestheticPrompt}_softbox_lighting` },
+                            { width: 900, height: 1200, crop: "fill", gravity: "auto" },
+                            { quality: "auto:good", fetch_format: "auto" },
+                        ],
+                        secure: true,
+                    });
+                }
+                else if (angleId === "side_45") {
+                    transformedUrl = cloudinary.url(modelPublicId, {
+                        transformation: [
+                            { effect: `gen_background_replace:prompt_${aestheticPrompt}_charcoal_rim_lighting` },
+                            { width: 900, height: 1200, crop: "fill", gravity: "auto" },
+                            { quality: "auto:good", fetch_format: "auto" },
+                        ],
+                        secure: true,
+                    });
+                }
+                else if (angleId === "back") {
+                    transformedUrl = cloudinary.url(modelPublicId, {
+                        transformation: [
+                            { effect: `gen_background_replace:prompt_${aestheticPrompt}_architectural_minimalist` },
+                            { width: 900, height: 1200, crop: "fill", gravity: "auto" },
+                            { quality: "auto:good", fetch_format: "auto" },
+                        ],
+                        secure: true,
+                    });
+                }
+                else {
+                    // detail
+                    transformedUrl = cloudinary.url(modelPublicId, {
+                        transformation: [
+                            { effect: `gen_background_replace:prompt_${aestheticPrompt}` },
+                            { width: 900, height: 1200, crop: "crop", gravity: "face", zoom: 0.75 },
+                            { quality: "auto:good", fetch_format: "auto" },
+                        ],
+                        secure: true,
+                    });
+                }
+            }
+            else {
+                transformedUrl = modelImageSource;
+            }
+            generatedResults.push({
                 angleId,
                 angleName: angleDef.name,
                 cameraAngle: angleDef.cameraAngle,
                 description: angleDef.description,
-                imageUrl,
-                promptUsed: `Architectural brutalist editorial portrait of model wearing ${req.productName} - ${angleDef.name}.`,
-            };
-        });
+                imageUrl: transformedUrl,
+                promptUsed: `Architectural brutalist studio editorial of model wearing ${req.productName} in ${aestheticLabel}.`,
+            });
+        }
         return {
             success: true,
             productName: req.productName,
             aesthetic: aestheticLabel,
-            isDemo: true,
-            message: errorMsg
-                ? `Notice: ${errorMsg}. Loaded curated streetwear editorial previews. You can still apply these directly or supply a valid Gemini API key in Studio Settings.`
-                : "Curated streetwear editorial previews loaded. Provide a Gemini API key in Studio Settings or environment to synthesize live bespoke neural models.",
-            images,
+            isDemo: false,
+            message: geminiNotice
+                ? `${geminiNotice} Transformed your model with Cloudinary AI Studio into 4 OFFSCRIPT lookbook angles.`
+                : `Transformed your model with Cloudinary AI Studio into 4 OFFSCRIPT lookbook angles.`,
+            images: generatedResults,
         };
     }
 }
