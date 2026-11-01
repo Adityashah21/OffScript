@@ -1,0 +1,23 @@
+name: Render Anti-Sleep Keep-Alive
+
+on:
+  schedule:
+    # Run every 12 minutes (Render sleeps after 15 minutes of inactivity)
+    - cron: '*/12 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  ping-render:
+    name: Ping Render Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping OFFSCRIPT Render Health Endpoint
+        run: |
+          echo "Sending keep-alive ping to OFFSCRIPT Render backend..."
+          RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null -m 25 "https://offscript-p9rk.onrender.com/health?source=github_cron")
+          echo "Response code: $RESPONSE"
+          if [ "$RESPONSE" -eq 200 ]; then
+            echo "✅ Render backend is awake and responding healthy (200 OK)."
+          else
+            echo "⚠️ Received status code $RESPONSE. The backend may have been woken up from sleep."
+          fi

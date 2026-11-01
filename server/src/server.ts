@@ -4,6 +4,7 @@ import { env } from "./config/env.js";
 import { createAdmin } from "./scripts/createAdmin.js";
 import { Product } from "./models/Product.js";
 import { seed } from "./scripts/seed.js";
+import { startKeepAliveService, stopKeepAliveService } from "./services/keepAlive.js";
 
 async function bootstrap() {
   try {
@@ -24,10 +25,12 @@ async function bootstrap() {
 
     const server = app.listen(env.PORT, () => {
       console.log(`OFFSCRIPT server listening on port ${env.PORT} (${env.NODE_ENV})`);
+      startKeepAliveService();
     });
 
     const shutdown = async (signal: string) => {
       console.log(`Received ${signal}. Shutting down gracefully...`);
+      stopKeepAliveService();
       server.close(async () => {
         console.log("HTTP server closed.");
         process.exit(0);
