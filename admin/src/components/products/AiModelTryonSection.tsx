@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowDown,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -131,6 +132,7 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
   const [generatedShots, setGeneratedShots] = useState<GeneratedShot[]>([]);
   const [garmentColor, setGarmentColor] = useState('black');
   const [isPlain, setIsPlain] = useState(true);
+  const [serverNotice, setServerNotice] = useState<string | null>(null);
 
   // Auto-detect color from productName if changed
   useEffect(() => {
@@ -281,6 +283,9 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
 
       if (response?.images && response.images.length > 0) {
         setGeneratedShots(response.images);
+        if (response.message) {
+          setServerNotice(response.message);
+        }
         const newUrls = response.images.map((img) => img.imageUrl);
 
         // Automatically add to the product's images array!
@@ -696,6 +701,28 @@ export const AiModelTryonSection: React.FC<AiModelTryonSectionProps> = ({
             </p>
           )}
         </div>
+
+        {/* Server Notice Alert */}
+        {serverNotice && (
+          <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+            <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold">{serverNotice}</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                To activate direct Google Imagen 3 neural synthesis, link Pay-As-You-Go billing at{' '}
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline font-mono text-primary"
+                >
+                  aistudio.google.com/app/apikey
+                </a>{' '}
+                and paste your key in Studio Settings above.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Generated 4 Shots Grid */}
         {generatedShots.length > 0 && (

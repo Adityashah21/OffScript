@@ -15,6 +15,7 @@ import {
   PlusCircle,
   Plus,
   CheckCircle2,
+  AlertCircle,
   Cloud,
   ChevronDown,
   ChevronUp,
@@ -120,6 +121,7 @@ export const AiStudio: React.FC = () => {
   const [generationStep, setGenerationStep] = useState('');
   const [generatedShots, setGeneratedShots] = useState<GeneratedAngle[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [serverNotice, setServerNotice] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -241,6 +243,9 @@ export const AiStudio: React.FC = () => {
 
       if (res?.images && res.images.length > 0) {
         setGeneratedShots(res.images);
+        if (res.message) {
+          setServerNotice(res.message);
+        }
         if (res.isDemo) {
           toast.info(res.message || 'Demo previews generated');
         } else {
@@ -647,6 +652,27 @@ export const AiStudio: React.FC = () => {
             </CardHeader>
 
             <CardContent className="pt-4 flex-1 space-y-4">
+              {/* Server Engine Transparency Notice */}
+              {serverNotice && (
+                <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-xs">{serverNotice}</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      To activate direct Google Imagen 3 generation, enable Pay-As-You-Go billing at{' '}
+                      <a
+                        href="https://aistudio.google.com/app/apikey"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline font-mono text-primary"
+                      >
+                        aistudio.google.com/app/apikey
+                      </a>{' '}
+                      and paste your key in Studio Settings above.
+                    </p>
+                  </div>
+                </div>
+              )}
               {/* Prominent Action Callout when Shots are ready */}
               {generatedShots.length > 0 && (
                 <div className="p-3.5 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
