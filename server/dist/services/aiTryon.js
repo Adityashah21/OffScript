@@ -9,6 +9,12 @@ export const PRESET_MODELS = [
         gender: "male",
         thumbnailUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=700&q=80",
         stylePrompt: "A 24-year-old male streetwear model, 6'1 athletic boxy frame, clean fade haircut, sharp angular jawline, neutral deadpan lookbook expression",
+        posePublicIds: {
+            front: "offscript/presets/kai/front",
+            side_45: "offscript/presets/kai/side_45",
+            back: "offscript/presets/kai/back",
+            detail: "offscript/presets/kai/detail",
+        },
     },
     {
         id: "preset-elena-female",
@@ -17,6 +23,12 @@ export const PRESET_MODELS = [
         gender: "female",
         thumbnailUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=700&q=80",
         stylePrompt: "A 23-year-old female high-fashion streetwear model, 5'10 slender athletic frame, slicked-back dark hair, high cheekbones, intense gaze, contemporary poise",
+        posePublicIds: {
+            front: "offscript/presets/elena/front",
+            side_45: "offscript/presets/elena/side_45",
+            back: "offscript/presets/elena/back",
+            detail: "offscript/presets/elena/detail",
+        },
     },
     {
         id: "preset-rei-unisex",
@@ -25,6 +37,12 @@ export const PRESET_MODELS = [
         gender: "unisex",
         thumbnailUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=700&q=80",
         stylePrompt: "An androgynous Asian streetwear model, relaxed slouch silhouette, bleached silver cropped hair, clean features, effortless Harajuku-meets-brutalist styling",
+        posePublicIds: {
+            front: "offscript/presets/rei/front",
+            side_45: "offscript/presets/rei/side_45",
+            back: "offscript/presets/rei/back",
+            detail: "offscript/presets/rei/detail",
+        },
     },
     {
         id: "preset-marcus-heavyweight",
@@ -33,36 +51,42 @@ export const PRESET_MODELS = [
         gender: "male",
         thumbnailUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=700&q=80",
         stylePrompt: "A 26-year-old Black male model, broad athletic shoulders, sculpted clean beard, calm confident lookbook expression, perfect for oversized streetwear silhouettes",
+        posePublicIds: {
+            front: "offscript/presets/marcus/front",
+            side_45: "offscript/presets/marcus/side_45",
+            back: "offscript/presets/marcus/back",
+            detail: "offscript/presets/marcus/detail",
+        },
     },
 ];
 export const TRYON_ANGLES = [
     {
         id: "front",
-        name: "Front Full View",
-        cameraAngle: "Eye-level direct frontal shot",
-        description: "Clear view of the product drape, typography, front cut, fit on model",
-        composition: "Direct frontal full-body lookbook portrait, eye-level camera, standing naturally with feet shoulder-width apart, arms relaxed at sides, highlighting front chest branding and relaxed shoulder drop",
+        name: "Full Body View",
+        cameraAngle: "Full-length head-to-toe standing pose",
+        description: "Complete full-body lookbook view showing overall proportions, cut, and fit",
+        composition: "Full-length editorial streetwear standing pose, relaxed stance, complete garment drape",
     },
     {
         id: "side_45",
-        name: "45° Three-Quarter Editorial Turn",
-        cameraAngle: "45 degree editorial perspective",
-        description: "Dynamic streetwear posture, showing side silhouette, sleeve length, shoulder drop",
-        composition: "Three-quarter 45-degree dynamic streetwear turn, one shoulder angled toward camera, head turned slightly, accentuating the boxy side drape, oversized sleeve stacking, and profile cut",
+        name: "Semi Body / 3/4 Turn",
+        cameraAngle: "Waist-up dynamic three-quarter editorial perspective",
+        description: "Semi-body pose highlighting sleeve drape, silhouette, and torso fit",
+        composition: "Waist-up three-quarter editorial posture, showing side silhouette, chest, and shoulder drop",
     },
     {
         id: "back",
-        name: "Back View / Silhouette",
-        cameraAngle: "Rear three-quarter to direct back view",
-        description: "Highlighting back graphics, hood/collar construction, back drape",
-        composition: "Model facing away from camera looking slightly over the shoulder, full focus on the back panel construction, rear graphic artwork, hood drape, and relaxed hem drop",
+        name: "Back View / Rear Perspective",
+        cameraAngle: "Direct rear view facing away",
+        description: "Model turned around showing back panel, rear construction, and collar/hood",
+        composition: "Model facing away from camera, showing the back of the garment, shoulders, and rear silhouette",
     },
     {
         id: "detail",
-        name: "Fabric & Seam Macro Detail",
-        cameraAngle: "Editorial tight macro crop",
-        description: "Macro texture, heavyweight cotton / nylon weave, hardware/zippers, logo embroideries",
-        composition: "Cinematic editorial close-up macro crop focused on chest and shoulder area, shallow depth of field, sharp focus on 500 GSM heavyweight textile weave, intricate ribbing, and subtle hardware details",
+        name: "Dynamic Profile & Styling",
+        cameraAngle: "Editorial profile / movement pose",
+        description: "High-fashion side profile pose showcasing garment cut and styling",
+        composition: "Dynamic side profile fashion posture emphasizing architectural lines and fabric structure",
     },
 ];
 /**
@@ -340,53 +364,92 @@ Format strictly as JSON:
      */
     async generateCloudinaryStudioAngles(req, modelImageSource, angles, aestheticLabel, geminiNotice) {
         const { v2: cloudinary } = await import("cloudinary");
-        let modelPublicId = "";
-        try {
-            if (modelImageSource.includes("cloudinary.com") && modelImageSource.includes("/upload/")) {
-                const parts = modelImageSource.split("/upload/");
-                const afterUpload = parts[1].replace(/^v\d+\//, "").replace(/\.[a-zA-Z0-9]+$/, "");
-                modelPublicId = afterUpload;
-            }
-            else {
-                const resolved = await resolveImageBuffer(modelImageSource);
-                const uploadRes = await cloudinary.uploader.upload(`data:${resolved.mimeType};base64,${resolved.buffer.toString("base64")}`, {
-                    folder: "offscript/ai-models",
-                    resource_type: "image",
-                });
-                modelPublicId = uploadRes.public_id;
-            }
-        }
-        catch (e) {
-            console.warn("Could not upload model to Cloudinary, using public URL:", e.message);
-        }
+        const preset = PRESET_MODELS.find((p) => p.id === req.modelImage ||
+            p.id === modelImageSource ||
+            p.thumbnailUrl === modelImageSource);
         const targetItem = determineTargetItem(req.category || "", req.productName || "");
-        const cleanProduct = (req.productName || "streetwear piece")
+        // Strict color handling: auto-detect from product title if not specified
+        let color = (req.garmentColor || "").toLowerCase().trim();
+        if (!color) {
+            const nameLower = (req.productName || "").toLowerCase();
+            const colorKeywords = [
+                "black",
+                "white",
+                "grey",
+                "gray",
+                "charcoal",
+                "olive",
+                "green",
+                "navy",
+                "blue",
+                "brown",
+                "beige",
+                "cream",
+                "maroon",
+                "burgundy",
+                "red",
+                "khaki",
+                "tan",
+                "sage",
+            ];
+            const match = colorKeywords.find((c) => nameLower.includes(c));
+            color = match || "solid_dark";
+        }
+        const cleanColor = color.replace(/[^a-z0-9]/g, "_");
+        const cleanProduct = (req.productName || "garment")
             .toLowerCase()
             .replace(/[^a-z0-9 ]/g, " ")
             .trim()
             .replace(/\s+/g, "_")
-            .slice(0, 35);
-        const cleanCat = (req.category || "apparel")
-            .toLowerCase()
-            .replace(/[^a-z0-9 ]/g, " ")
-            .trim()
-            .replace(/\s+/g, "_")
-            .slice(0, 20);
+            .slice(0, 30);
+        // Strictly prevent hallucinations: omit generic "luxury_streetwear" keywords which induce random Paris badges and text patches
+        const isCleanSolid = req.isPlain !== false;
+        const baseGarmentSpec = isCleanSolid
+            ? `solid_plain_${cleanColor}_${cleanProduct}_completely_clean_minimalist_no_logos_no_graphics_no_text_no_patches_exact_${cleanColor}`
+            : `${cleanColor}_${cleanProduct}_matching_exact_color_and_fabric`;
         const aestheticPrompt = aestheticLabel
             .toLowerCase()
             .replace(/[^a-z0-9]/g, "_")
             .replace(/_+/g, "_")
-            .slice(0, 50);
+            .slice(0, 45);
+        // If custom model uploaded by user, upload once to Cloudinary
+        let customModelPublicId = "";
+        if (!preset) {
+            try {
+                if (modelImageSource.includes("cloudinary.com") && modelImageSource.includes("/upload/")) {
+                    const parts = modelImageSource.split("/upload/");
+                    customModelPublicId = parts[1].replace(/^v\d+\//, "").replace(/\.[a-zA-Z0-9]+$/, "");
+                }
+                else {
+                    const resolved = await resolveImageBuffer(modelImageSource);
+                    const uploadRes = await cloudinary.uploader.upload(`data:${resolved.mimeType};base64,${resolved.buffer.toString("base64")}`, {
+                        folder: "offscript/ai-models",
+                        resource_type: "image",
+                    });
+                    customModelPublicId = uploadRes.public_id;
+                }
+            }
+            catch (e) {
+                console.warn("Could not upload model to Cloudinary, using public URL:", e.message);
+            }
+        }
         const generatedResults = [];
         for (const angleId of angles) {
             const angleDef = TRYON_ANGLES.find((a) => a.id === angleId) || TRYON_ANGLES[0];
+            // Use specific pose image if preset, or custom uploaded model
+            const publicId = preset?.posePublicIds?.[angleId] || customModelPublicId;
             let transformedUrl = "";
-            if (modelPublicId) {
+            if (publicId) {
+                let replacePrompt = "";
+                let bgPrompt = "";
                 if (angleId === "front") {
-                    transformedUrl = cloudinary.url(modelPublicId, {
+                    // 1. Full Body Editorial Shot
+                    replacePrompt = `from_${targetItem};to_${baseGarmentSpec}_full_body_standing_pose`;
+                    bgPrompt = `prompt_${aestheticPrompt}_concrete_brutalist_studio_softbox_lighting`;
+                    transformedUrl = cloudinary.url(publicId, {
                         transformation: [
-                            { effect: `gen_replace:from_${targetItem};to_${cleanProduct}_${cleanCat}_luxury_streetwear` },
-                            { effect: `gen_background_replace:prompt_${aestheticPrompt}_concrete_brutalist_studio_softbox_lighting` },
+                            { effect: `gen_replace:${replacePrompt}` },
+                            { effect: `gen_background_replace:${bgPrompt}` },
                             { width: 900, height: 1200, crop: "fill", gravity: "auto" },
                             { quality: "auto:good", fetch_format: "auto" },
                         ],
@@ -394,10 +457,13 @@ Format strictly as JSON:
                     });
                 }
                 else if (angleId === "side_45") {
-                    transformedUrl = cloudinary.url(modelPublicId, {
+                    // 2. Semi Body 3/4 Editorial Pose
+                    replacePrompt = `from_${targetItem};to_${baseGarmentSpec}_semi_body_three_quarter_profile`;
+                    bgPrompt = `prompt_${aestheticPrompt}_charcoal_rim_lighting`;
+                    transformedUrl = cloudinary.url(publicId, {
                         transformation: [
-                            { effect: `gen_replace:from_${targetItem};to_${cleanProduct}_${cleanCat}_three_quarter_profile_silhouette` },
-                            { effect: `gen_background_replace:prompt_${aestheticPrompt}_charcoal_rim_lighting` },
+                            { effect: `gen_replace:${replacePrompt}` },
+                            { effect: `gen_background_replace:${bgPrompt}` },
                             { width: 900, height: 1200, crop: "fill", gravity: "auto" },
                             { quality: "auto:good", fetch_format: "auto" },
                         ],
@@ -405,10 +471,13 @@ Format strictly as JSON:
                     });
                 }
                 else if (angleId === "back") {
-                    transformedUrl = cloudinary.url(modelPublicId, {
+                    // 3. Back View / Rear Perspective
+                    replacePrompt = `from_${targetItem};to_${baseGarmentSpec}_worn_from_behind_rear_view`;
+                    bgPrompt = `prompt_${aestheticPrompt}_architectural_minimalist`;
+                    transformedUrl = cloudinary.url(publicId, {
                         transformation: [
-                            { effect: `gen_replace:from_${targetItem};to_${cleanProduct}_${cleanCat}_worn_from_behind_rear_view` },
-                            { effect: `gen_background_replace:prompt_${aestheticPrompt}_architectural_minimalist` },
+                            { effect: `gen_replace:${replacePrompt}` },
+                            { effect: `gen_background_replace:${bgPrompt}` },
                             { width: 900, height: 1200, crop: "fill", gravity: "auto" },
                             { quality: "auto:good", fetch_format: "auto" },
                         ],
@@ -416,11 +485,13 @@ Format strictly as JSON:
                     });
                 }
                 else {
-                    // detail
-                    transformedUrl = cloudinary.url(modelPublicId, {
+                    // 4. Dynamic Side Profile & Styling View
+                    replacePrompt = `from_${targetItem};to_${baseGarmentSpec}_side_profile_view`;
+                    bgPrompt = `prompt_${aestheticPrompt}_studio`;
+                    transformedUrl = cloudinary.url(publicId, {
                         transformation: [
-                            { effect: `gen_replace:from_${targetItem};to_${cleanProduct}_${cleanCat}_macro_fabric_and_emblem_detail` },
-                            { effect: `gen_background_replace:prompt_${aestheticPrompt}_studio` },
+                            { effect: `gen_replace:${replacePrompt}` },
+                            { effect: `gen_background_replace:${bgPrompt}` },
                             { width: 900, height: 1200, crop: "fill", gravity: "auto" },
                             { quality: "auto:good", fetch_format: "auto" },
                         ],
@@ -437,7 +508,7 @@ Format strictly as JSON:
                 cameraAngle: angleDef.cameraAngle,
                 description: angleDef.description,
                 imageUrl: transformedUrl,
-                promptUsed: `Editorial virtual try-on of model wearing ${req.productName} (${req.category}) in ${aestheticLabel} - ${angleDef.name}.`,
+                promptUsed: `Editorial virtual try-on of model wearing ${req.productName} in ${angleDef.name} - exact color: ${color}, plain unbranded minimalist.`,
             });
         }
         return {
@@ -446,8 +517,8 @@ Format strictly as JSON:
             aesthetic: aestheticLabel,
             isDemo: false,
             message: geminiNotice
-                ? `${geminiNotice} Synthesized 4 lookbook angles with model wearing ${req.productName} via Cloudinary AI Studio.`
-                : `Synthesized 4 lookbook angles with model wearing ${req.productName} via Cloudinary AI Studio.`,
+                ? `${geminiNotice} Synthesized 4 lookbook angles (Full Body, Semi Body, Back View, Dynamic Profile) with model wearing ${req.productName} via Cloudinary AI Studio.`
+                : `Synthesized 4 lookbook angles (Full Body, Semi Body, Back View, Dynamic Profile) with model wearing ${req.productName} via Cloudinary AI Studio.`,
             images: generatedResults,
         };
     }

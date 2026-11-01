@@ -155,6 +155,8 @@ adminAiRouter.post(
         productName,
         category,
         aesthetic,
+        garmentColor,
+        isPlain,
         geminiApiKey,
         angles,
       } = req.body;
@@ -172,6 +174,8 @@ adminAiRouter.post(
         productName,
         category: category || "Streetwear",
         aesthetic,
+        garmentColor,
+        isPlain,
         geminiApiKey,
         angles,
       });

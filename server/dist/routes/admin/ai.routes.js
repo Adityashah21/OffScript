@@ -130,7 +130,7 @@ adminAiRouter.post("/upload-model", upload.single("image"), async (req, res, nex
  */
 adminAiRouter.post("/generate", async (req, res, next) => {
     try {
-        const { modelImage, productImage, productName, category, aesthetic, geminiApiKey, angles, } = req.body;
+        const { modelImage, productImage, productName, category, aesthetic, garmentColor, isPlain, geminiApiKey, angles, } = req.body;
         if (!productImage) {
             throw new AppError(400, "PRODUCT_IMAGE_REQUIRED", "Product garment image is required");
         }
@@ -143,6 +143,8 @@ adminAiRouter.post("/generate", async (req, res, next) => {
             productName,
             category: category || "Streetwear",
             aesthetic,
+            garmentColor,
+            isPlain,
             geminiApiKey,
             angles,
         });

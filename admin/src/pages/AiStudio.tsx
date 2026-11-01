@@ -94,6 +94,18 @@ export const AiStudio: React.FC = () => {
   const [isUploadingGarment, setIsUploadingGarment] = useState(false);
   const [productTitle, setProductTitle] = useState('Heavyweight Boxy Hoodie');
   const [category, setCategory] = useState('Hoodies');
+  const [garmentColor, setGarmentColor] = useState('black');
+  const [isPlain, setIsPlain] = useState(true);
+
+  // Auto-detect color from productTitle if changed
+  useEffect(() => {
+    if (productTitle) {
+      const lower = productTitle.toLowerCase();
+      const known = ['black', 'white', 'grey', 'gray', 'charcoal', 'olive', 'green', 'navy', 'blue', 'beige', 'brown', 'maroon', 'burgundy'];
+      const found = known.find((c) => lower.includes(c));
+      if (found) setGarmentColor(found);
+    }
+  }, [productTitle]);
 
   // Studio Settings
   const [aesthetic, setAesthetic] = useState(AESTHETICS[0].label);
@@ -212,11 +224,13 @@ export const AiStudio: React.FC = () => {
         productName: productTitle || 'Streetwear Piece',
         category,
         aesthetic,
+        garmentColor,
+        isPlain,
         geminiApiKey: geminiApiKey.trim() || undefined,
         angles: ['front', 'side_45', 'back', 'detail'],
       };
 
-      setGenerationStep('Synthesizing 4 angle shots with Imagen 3 & saving to Cloud CDN...');
+      setGenerationStep('Synthesizing 4 distinct poses (Full Body, Semi Body, Back View, Dynamic Profile)...');
 
       const res = await api.post<{
         success: boolean;
@@ -501,6 +515,80 @@ export const AiStudio: React.FC = () => {
                     />
                   </label>
                 )}
+              </div>
+
+              {/* Garment Color & Design Fidelity */}
+              <div className="pt-3 border-t space-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Garment Exact Color *
+                    </label>
+                    <span className="text-[10px] text-emerald-600 font-mono">Keeps color identical across all 4 angles</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'black', label: 'Black' },
+                      { id: 'white', label: 'White' },
+                      { id: 'charcoal', label: 'Charcoal' },
+                      { id: 'grey', label: 'Heather Grey' },
+                      { id: 'olive', label: 'Olive' },
+                      { id: 'navy', label: 'Navy' },
+                      { id: 'beige', label: 'Beige / Cream' },
+                      { id: 'brown', label: 'Brown' },
+                      { id: 'maroon', label: 'Maroon' },
+                    ].map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setGarmentColor(c.id)}
+                        className={`px-2.5 py-1 rounded text-[11px] font-mono transition-all ${
+                          garmentColor === c.id
+                            ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
+                            : 'bg-muted/40 hover:bg-muted text-muted-foreground border border-input/60'
+                        }`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                    Garment Design & Artwork
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPlain(true)}
+                      className={`p-2 rounded-lg border text-left text-xs transition-all ${
+                        isPlain
+                          ? 'border-emerald-500 bg-emerald-500/10 text-foreground font-semibold'
+                          : 'border-input hover:bg-muted/30 text-muted-foreground'
+                      }`}
+                    >
+                      <div className="font-mono text-[11px]">Plain / Minimalist</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                        Solid color, completely clean, NO random logos, NO patches
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPlain(false)}
+                      className={`p-2 rounded-lg border text-left text-xs transition-all ${
+                        !isPlain
+                          ? 'border-primary bg-primary/10 text-foreground font-semibold'
+                          : 'border-input hover:bg-muted/30 text-muted-foreground'
+                      }`}
+                    >
+                      <div className="font-mono text-[11px]">Graphic / Printed</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                        Allows graphic prints & artwork from product photo
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
