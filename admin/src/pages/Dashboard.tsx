@@ -76,6 +76,15 @@ export const Dashboard: React.FC = () => {
   }, [ordersData, orders]);
   const pendingCodValue = useMemo(() => computePendingCodValue(orders), [orders]);
   const outOfStockCount = useMemo(() => products.filter((p) => !p.inStock).length, [products]);
+  const lowStockItems = useMemo(() => {
+    return products.filter(
+      (p) =>
+        p.purchaseMode === 'authorized_cod' &&
+        typeof p.stockQuantity === 'number' &&
+        p.stockQuantity <= (p.lowStockThreshold || 5) &&
+        p.inStock
+    );
+  }, [products]);
 
   // Attention orders & 14-day trend
   const attentionOrders = useMemo(() => getOrdersNeedingAttention(orders), [orders]);
@@ -113,6 +122,31 @@ export const Dashboard: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Low Stock Warning Banner */}
+      {lowStockItems.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3.5 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2.5">
+            <AlertOctagon className="h-4 w-4 text-amber-500 shrink-0" />
+            <div>
+              <span className="font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                Low Stock Warning:
+              </span>{' '}
+              <span className="text-foreground">
+                {lowStockItems.length} direct reselling item{lowStockItems.length > 1 ? 's are' : ' is'} below threshold (≤ 5 units left):{' '}
+                <span className="font-medium text-muted-foreground">
+                  {lowStockItems.map((p) => `${p.name} (${p.stockQuantity ?? 0})`).join(', ')}
+                </span>
+              </span>
+            </div>
+          </div>
+          <Link to="/products">
+            <Button variant="outline" size="sm" className="h-7 text-xs border-amber-500/40 hover:bg-amber-500/10">
+              Manage Stock
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Stat Cards Grid (5 cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">

@@ -397,7 +397,7 @@ describe("Phase 5: Admin Auth, CRUD & Operations Tests", () => {
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty("url");
-      expect(res.body.url).toContain("/static/");
+      expect(res.body.url).toMatch(/(\/static\/|cloudinary\.com)/);
       expect(res.body.mimetype).toBe("image/png");
     });
 

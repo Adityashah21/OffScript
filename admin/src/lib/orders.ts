@@ -3,19 +3,29 @@ import { formatDateTimeIST } from './format';
 
 export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
-  confirmed: ['shipped', 'cancelled'],
-  shipped: ['delivered', 'rto'],
-  delivered: [],
+  confirmed: ['processing', 'shipped', 'cancelled'],
+  processing: ['shipped', 'cancelled'],
+  shipped: ['delivered', 'failed_delivery', 'rto'],
+  delivered: ['return_requested'],
+  return_requested: ['returned', 'delivered'],
+  returned: ['refunded'],
   cancelled: [],
+  refunded: [],
+  failed_delivery: ['rto', 'shipped'],
   rto: [],
 };
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pending',
   confirmed: 'Confirmed',
+  processing: 'Processing',
   shipped: 'Shipped',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
+  return_requested: 'Return Requested',
+  returned: 'Returned',
+  refunded: 'Refunded',
+  failed_delivery: 'Failed Delivery',
   rto: 'RTO',
 };
 

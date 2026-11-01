@@ -107,6 +107,13 @@ export async function processOrderRequest(
   if (!product.inStock) {
     details.product = "This piece is currently out of stock.";
   }
+  if (
+    product.purchaseMode === "authorized_cod" &&
+    typeof product.stockQuantity === "number" &&
+    product.stockQuantity < input.quantity
+  ) {
+    details.quantity = `Only ${product.stockQuantity} pieces available in stock.`;
+  }
 
   // Customer validations
   if (!input.fullName || input.fullName.trim().length < 2) {
@@ -199,6 +206,21 @@ export async function processOrderRequest(
   const itemTotal = product.price * quantity;
   const shipping = product.shippingCharge;
   const grandTotal = itemTotal + shipping;
+
+  // Deduct inventory atomically for direct reselling products
+  if (product.purchaseMode === "authorized_cod" && typeof product.stockQuantity === "number") {
+    const updated = await Product.findOneAndUpdate(
+      { _id: product._id, stockQuantity: { $gte: quantity } },
+      { $inc: { stockQuantity: -quantity } },
+      { new: true }
+    );
+    if (!updated) {
+      throw new AppError(422, "INSUFFICIENT_STOCK", "Selected quantity is no longer available in stock");
+    }
+    if ((updated.stockQuantity ?? 0) <= 0) {
+      await Product.updateOne({ _id: product._id }, { inStock: false });
+    }
+  }
 
   // 7. Snapshot product details
   const ref = generateOrderRef();

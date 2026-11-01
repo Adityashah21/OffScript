@@ -88,6 +88,11 @@ export const ProductForm: React.FC = () => {
       collectionIds: [],
       affiliateUrl: null,
       purchaseMode: 'affiliate',
+      productType: 'affiliate',
+      costPrice: undefined,
+      stockQuantity: 50,
+      sku: '',
+      lowStockThreshold: 5,
       codEnabled: false,
       shippingCharge: 0,
       inStock: true,
@@ -191,6 +196,11 @@ export const ProductForm: React.FC = () => {
         collectionIds: existingProduct.collectionIds || [],
         affiliateUrl: existingProduct.affiliateUrl || null,
         purchaseMode: existingProduct.purchaseMode,
+        productType: existingProduct.productType || (existingProduct.purchaseMode === 'authorized_cod' ? 'reseller' : 'affiliate'),
+        costPrice: existingProduct.costPrice || undefined,
+        stockQuantity: existingProduct.stockQuantity ?? 50,
+        sku: existingProduct.sku || '',
+        lowStockThreshold: existingProduct.lowStockThreshold ?? 5,
         codEnabled: existingProduct.codEnabled,
         shippingCharge: existingProduct.shippingCharge || 0,
         inStock: existingProduct.inStock,
@@ -210,6 +220,7 @@ export const ProductForm: React.FC = () => {
   // Switch purchase mode handler enforcing invariant
   const handlePurchaseModeChange = (mode: 'affiliate' | 'authorized_cod') => {
     setValue('purchaseMode', mode, { shouldValidate: true, shouldDirty: true });
+    setValue('productType', mode === 'authorized_cod' ? 'reseller' : 'affiliate', { shouldValidate: true, shouldDirty: true });
     setValue('codEnabled', mode === 'authorized_cod', { shouldValidate: true, shouldDirty: true });
   };
 
@@ -623,19 +634,81 @@ export const ProductForm: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-1.5 pt-2 border-t">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      COD Shipping Charge (₹)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="0 for Free Shipping"
-                      {...register('shippingCharge')}
-                      error={errors.shippingCharge?.message}
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      Set 0 to provide free cash-on-delivery shipping to customers.
-                    </p>
+                  <div className="space-y-4 pt-2 border-t">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Available Stock Quantity (Units) *
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder="50"
+                          {...register('stockQuantity')}
+                          error={errors.stockQuantity?.message}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Automatically decrements on confirmed COD orders.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Low Stock Alert Threshold
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder="5"
+                          {...register('lowStockThreshold')}
+                          error={errors.lowStockThreshold?.message}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Triggers low-stock warning on admin dashboard when inventory drops below this number.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Admin Cost Price (₹ Strictly Confidential)
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder="e.g. 750"
+                          {...register('costPrice')}
+                          error={errors.costPrice?.message}
+                        />
+                        <p className="text-[11px] text-amber-600 font-mono">
+                          Never exposed to storefront shoppers. Used solely for gross profit analytics.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Internal SKU / Barcode
+                        </label>
+                        <Input
+                          placeholder="e.g. OS-CAMPSHIRT-BLK-01"
+                          {...register('sku')}
+                          error={errors.sku?.message}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        COD Shipping Charge (₹)
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="0 for Free Shipping"
+                        {...register('shippingCharge')}
+                        error={errors.shippingCharge?.message}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Set 0 to provide free cash-on-delivery shipping to customers.
+                      </p>
+                    </div>
                   </div>
                 )}
               </CardContent>

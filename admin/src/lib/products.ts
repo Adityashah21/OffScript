@@ -89,6 +89,16 @@ export const productFormSchema = z
         'Must be a valid URL starting with http:// or https://'
       ),
     purchaseMode: z.enum(['affiliate', 'authorized_cod'] as const).default('affiliate'),
+    productType: z.enum(['affiliate', 'reseller'] as const).optional(),
+    costPrice: z.coerce
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .or(z.nan().transform(() => undefined)),
+    stockQuantity: z.coerce.number().int().nonnegative().default(50),
+    sku: z.string().optional(),
+    lowStockThreshold: z.coerce.number().int().nonnegative().default(5),
     codEnabled: z.boolean().default(false),
     shippingCharge: z.coerce.number().int().nonnegative().default(0),
     inStock: z.boolean().default(true),

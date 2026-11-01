@@ -16,9 +16,11 @@ import { ordersRouter } from "./routes/orders.routes.js";
 import { contactRouter } from "./routes/contact.routes.js";
 import { newsletterRouter } from "./routes/newsletter.routes.js";
 import { affiliateRouter } from "./routes/affiliate.routes.js";
+import { customerRouter } from "./routes/customer.routes.js";
 import { adminRouter } from "./routes/admin/index.js";
 import { seed } from "./scripts/seed.js";
 import { Product } from "./models/Product.js";
+import { Collection } from "./models/Collection.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 export function createApp() {
@@ -100,6 +102,46 @@ export function createApp() {
     app.get("/api/health", (_req, res) => {
         res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
     });
+    // Dynamic SEO: robots.txt and sitemap.xml
+    app.get("/robots.txt", (_req, res) => {
+        res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nSitemap: https://offscript-tan.vercel.app/sitemap.xml\n`);
+    });
+    app.get(["/sitemap.xml", "/api/sitemap.xml"], async (_req, res, next) => {
+        try {
+            const baseUrl = "https://offscript-tan.vercel.app";
+            const [products, collections] = await Promise.all([
+                Product.find({ inStock: true }, "slug lastUpdatedAt").lean(),
+                Collection.find({}, "slug updatedAt").lean(),
+            ]);
+            const staticUrls = [
+                "",
+                "/discover",
+                "/men",
+                "/women",
+                "/streetwear",
+                "/accessories",
+                "/under-999",
+                "/about",
+                "/faq",
+                "/contact",
+            ];
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+            for (const u of staticUrls) {
+                xml += `  <url><loc>${baseUrl}${u}</loc><changefreq>daily</changefreq><priority>${u === "" ? "1.0" : "0.8"}</priority></url>\n`;
+            }
+            for (const p of products) {
+                xml += `  <url><loc>${baseUrl}/product/${p.slug}</loc><lastmod>${p.lastUpdatedAt ? new Date(p.lastUpdatedAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]}</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>\n`;
+            }
+            for (const c of collections) {
+                xml += `  <url><loc>${baseUrl}/collections/${c.slug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>\n`;
+            }
+            xml += `</urlset>`;
+            res.type("application/xml").send(xml);
+        }
+        catch (err) {
+            next(err);
+        }
+    });
     // Database seed trigger (idempotent, safe for initial setup)
     app.all("/api/seed", async (_req, res, next) => {
         try {
@@ -117,8 +159,10 @@ export function createApp() {
     app.use("/api/edits", editsRouter);
     app.use("/api/search", searchRouter);
     app.use("/api/orders", ordersRouter);
+    app.use("/api/customer", customerRouter);
     app.use("/api/contact", contactRouter);
     app.use("/api/newsletter", newsletterRouter);
+    app.use("/api/affiliate", affiliateRouter);
     app.use("/api/r", affiliateRouter);
     // Admin API Routes (JWT protected)
     app.use("/api/admin", adminRouter);

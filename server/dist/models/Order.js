@@ -21,11 +21,24 @@ const CustomerSchema = new Schema({
     email: { type: String },
     address: { type: CustomerAddressSchema, required: true },
 }, { _id: false });
+export const ORDER_STATUSES = [
+    "pending",
+    "confirmed",
+    "processing",
+    "shipped",
+    "delivered",
+    "cancelled",
+    "return_requested",
+    "returned",
+    "refunded",
+    "failed_delivery",
+    "rto",
+];
 const OrderStatusHistorySchema = new Schema({
     status: {
         type: String,
         required: true,
-        enum: ["pending", "confirmed", "shipped", "delivered", "cancelled", "rto"],
+        enum: ORDER_STATUSES,
     },
     timestamp: { type: Date, default: Date.now },
     note: { type: String },
@@ -41,6 +54,7 @@ const OrderAttributionSchema = new Schema({
 }, { _id: false });
 const OrderSchema = new Schema({
     ref: { type: String, required: true, unique: true, index: true },
+    customerId: { type: String, index: true },
     product: { type: ProductSnapshotSchema, required: true },
     customer: { type: CustomerSchema, required: true },
     size: { type: String },
@@ -53,7 +67,7 @@ const OrderSchema = new Schema({
     status: {
         type: String,
         required: true,
-        enum: ["pending", "confirmed", "shipped", "delivered", "cancelled", "rto"],
+        enum: ORDER_STATUSES,
         default: "pending",
         index: true,
     },

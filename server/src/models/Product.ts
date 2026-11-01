@@ -19,6 +19,11 @@ export interface IProduct {
   collectionIds: string[];
   affiliateUrl: string | null;
   purchaseMode: "affiliate" | "authorized_cod";
+  productType?: "affiliate" | "reseller";
+  costPrice?: number;
+  stockQuantity?: number;
+  sku?: string;
+  lowStockThreshold?: number;
   codEnabled: boolean;
   shippingCharge: number;
   inStock: boolean;
@@ -84,6 +89,35 @@ const ProductSchema = new Schema<IProduct>(
       enum: ["affiliate", "authorized_cod"],
       default: "affiliate",
     },
+    productType: {
+      type: String,
+      enum: ["affiliate", "reseller"],
+      default: function (this: any) {
+        return this && this.purchaseMode === "authorized_cod" ? "reseller" : "affiliate";
+      },
+      index: true,
+    },
+    costPrice: {
+      type: Number,
+      min: 0,
+      select: false, // Hidden from customer-facing queries
+    },
+    stockQuantity: {
+      type: Number,
+      default: 50,
+      min: 0,
+      index: true,
+    },
+    sku: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
+    lowStockThreshold: {
+      type: Number,
+      default: 5,
+      min: 0,
+    },
     codEnabled: {
       type: Boolean,
       required: true,
@@ -147,6 +181,10 @@ ProductSchema.index({
   category: "text",
   subcategory: "text",
 });
+
+ProductSchema.index({ productType: 1, inStock: 1 });
+ProductSchema.index({ brand: 1, price: 1 });
+ProductSchema.index({ category: 1, gender: 1, inStock: 1 });
 
 export const Product: Model<IProduct> =
   mongoose.models.Product || mongoose.model<IProduct>("Product", ProductSchema);

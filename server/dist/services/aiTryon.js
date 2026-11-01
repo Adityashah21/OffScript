@@ -155,7 +155,7 @@ export class AiTryonService {
      * Generates 4 angle try-on shots matching OFFSCRIPT luxury streetwear aesthetic.
      */
     async generateMultiAngleShots(req) {
-        const apiKey = req.geminiApiKey || env.GEMINI_API_KEY;
+        const apiKey = req.geminiApiKey !== undefined ? req.geminiApiKey : env.GEMINI_API_KEY;
         const requestedAngles = req.angles && req.angles.length > 0
             ? req.angles
             : ["front", "side_45", "back", "detail"];

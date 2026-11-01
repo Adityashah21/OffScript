@@ -34,6 +34,7 @@ describe("Phase 6: Cloud Storage & Gemini Virtual Try-On Studio", () => {
       category: "Hoodies",
       productImage: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2",
       modelImage: "preset-kai-male",
+      geminiApiKey: "",
     });
 
     expect(response.success).toBe(true);

@@ -28,6 +28,7 @@ import {
   type CustomerProfile,
   type StoredOrder,
 } from "@/lib/store";
+import { useCustomerAuth } from "@/lib/customerAuth";
 import { inr, formatDate } from "@/lib/format";
 import { seo } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,7 @@ export function ProfilePage() {
   const profile = customerProfile.use();
   const savedWishlist = wishlist.use();
   const localStoredOrders = storedOrders.use();
+  const { isAuthenticated, user, token, logout } = useCustomerAuth();
 
   const [activeTab, setActiveTab] = useState<"orders" | "address" | "lookup">("orders");
   const [orders, setOrders] = useState<OrderTrackItem[]>([]);
@@ -119,17 +121,44 @@ export function ProfilePage() {
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [lookupSuccess, setLookupSuccess] = useState<string | null>(null);
 
-  // Initial orders fetch if phone or orderRefs present
+  // Initial orders fetch
   useEffect(() => {
     setEditAddress({ ...profile });
 
-    const phoneToFetch = profile.mobile?.trim();
-    const refsToFetch = profile.orderRefs || [];
-
-    if (phoneToFetch || refsToFetch.length > 0) {
-      fetchOrders(phoneToFetch || undefined, refsToFetch[0]);
+    if (isAuthenticated && token) {
+      fetchCustomerOrders();
+    } else {
+      const phoneToFetch = profile.mobile?.trim();
+      const refsToFetch = profile.orderRefs || [];
+      if (phoneToFetch || refsToFetch.length > 0) {
+        fetchOrders(phoneToFetch || undefined, refsToFetch[0]);
+      }
     }
-  }, [profile.mobile]);
+  }, [profile.mobile, isAuthenticated, token]);
+
+  const fetchCustomerOrders = async () => {
+    if (!token) return;
+    setLoadingOrders(true);
+    try {
+      const API_URL = getApiUrl();
+      const res = await fetch(`${API_URL}/api/customer/orders`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.orders)) {
+          setOrders(data.orders);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load customer orders:", err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
 
   const fetchOrders = async (mobile?: string, ref?: string) => {
     if (!mobile && !ref) return;
@@ -270,16 +299,34 @@ export function ProfilePage() {
           <div>
             <span className="eyebrow text-accent">Personal Account</span>
             <h1 className="display-lg mt-2">
-              {profile.fullName ? profile.fullName : "My Profile & Orders"}
+              {isAuthenticated && user ? user.name : (profile.fullName ? profile.fullName : "My Profile & Orders")}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {profile.mobile
+              {isAuthenticated && user
+                ? `Signed in as ${user.email} • Synced with OFFSCRIPT Cloud`
+                : profile.mobile
                 ? `Associated with +91 ${profile.mobile.slice(-10)}`
                 : "Your orders and saved delivery details on this device."}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {isAuthenticated ? (
+              <button
+                onClick={logout}
+                className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium hover:border-destructive hover:text-destructive transition-colors"
+              >
+                <span>Sign Out</span>
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 bg-foreground text-background px-3 py-1.5 text-xs font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
+              >
+                <span>Sign In / Register</span>
+              </Link>
+            )}
+
             <button
               onClick={() => setActiveTab("lookup")}
               className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium hover:border-foreground transition-colors"
@@ -290,7 +337,13 @@ export function ProfilePage() {
 
             {displayOrders.length > 0 && (
               <button
-                onClick={() => fetchOrders(profile.mobile, profile.orderRefs?.[0])}
+                onClick={() => {
+                  if (isAuthenticated && token) {
+                    fetchCustomerOrders();
+                  } else {
+                    fetchOrders(profile.mobile, profile.orderRefs?.[0]);
+                  }
+                }}
                 disabled={loadingOrders}
                 className="inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-medium hover:border-foreground transition-colors"
                 title="Refresh order statuses"

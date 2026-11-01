@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { Order } from "../../models/Order.js";
+import { Product } from "../../models/Product.js";
 import { ORDER_STATUSES } from "../../schemas/order.schema.js";
 import { AppError } from "../../middleware/errorHandler.js";
 export const adminOrdersRouter = Router();
@@ -60,10 +61,15 @@ export function formatAdminOrder(o) {
 }
 const ALLOWED_TRANSITIONS = {
     pending: ["confirmed", "cancelled"],
-    confirmed: ["shipped", "cancelled"],
-    shipped: ["delivered", "rto"],
-    delivered: [],
+    confirmed: ["processing", "shipped", "cancelled"],
+    processing: ["shipped", "cancelled"],
+    shipped: ["delivered", "failed_delivery", "rto"],
+    delivered: ["return_requested"],
+    return_requested: ["returned", "delivered"],
+    returned: ["refunded"],
     cancelled: [],
+    refunded: [],
+    failed_delivery: ["rto", "shipped"],
     rto: [],
 };
 const updateStatusSchema = z.object({
@@ -251,6 +257,10 @@ adminOrdersRouter.patch("/:ref/status", async (req, res, next) => {
             note: note || `Status updated from ${currentStatus} to ${newStatus}`,
         });
         await order.save();
+        // Inventory restoration when order is cancelled
+        if (newStatus === "cancelled" && currentStatus !== "cancelled") {
+            await Product.updateOne({ slug: order.product.slug }, { $inc: { stockQuantity: order.quantity }, $set: { inStock: true } });
+        }
         const formatted = formatAdminOrder(order);
         res.json({
             data: formatted,

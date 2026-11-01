@@ -59,9 +59,12 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           <div className="flex items-center gap-2 text-sm">
             <PriceBadge price={p.price} originalPrice={p.originalPrice} />
             {isCodEligible(p) ? (
-              <span className="eyebrow text-olive">COD</span>
+              <span className="eyebrow text-olive font-semibold">COD</span>
             ) : (
-              <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" aria-label="Sold by external retailer" />
+              <span className="eyebrow text-muted-foreground flex items-center gap-0.5" title={`Sold via ${p.retailer}`}>
+                <span className="text-[10px]">{p.retailer}</span>
+                <ArrowUpRight className="h-3 w-3 text-muted-foreground" aria-label="Sold by external retailer" />
+              </span>
             )}
           </div>
         </div>

@@ -52,3 +52,17 @@ export const loginRateLimiter = rateLimit({
         },
     },
 });
+export const authRateLimiter = loginRateLimiter;
+export const affiliateRedirectLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => isTest,
+    message: {
+        error: {
+            code: "RATE_LIMITED",
+            message: "Too many redirect requests. Please slow down.",
+        },
+    },
+});

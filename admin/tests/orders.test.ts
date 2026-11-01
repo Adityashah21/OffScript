@@ -17,22 +17,24 @@ describe('Order Status Transitions', () => {
   });
 
   it('correctly returns next allowed transitions for confirmed', () => {
-    expect(getNextAllowedStatuses('confirmed')).toEqual(['shipped', 'cancelled']);
+    expect(getNextAllowedStatuses('confirmed')).toEqual(['processing', 'shipped', 'cancelled']);
+    expect(canTransitionTo('confirmed', 'processing')).toBe(true);
     expect(canTransitionTo('confirmed', 'shipped')).toBe(true);
     expect(canTransitionTo('confirmed', 'cancelled')).toBe(true);
     expect(canTransitionTo('confirmed', 'delivered')).toBe(false);
   });
 
   it('correctly returns next allowed transitions for shipped', () => {
-    expect(getNextAllowedStatuses('shipped')).toEqual(['delivered', 'rto']);
+    expect(getNextAllowedStatuses('shipped')).toEqual(['delivered', 'failed_delivery', 'rto']);
     expect(canTransitionTo('shipped', 'delivered')).toBe(true);
+    expect(canTransitionTo('shipped', 'failed_delivery')).toBe(true);
     expect(canTransitionTo('shipped', 'rto')).toBe(true);
     expect(canTransitionTo('shipped', 'cancelled')).toBe(false);
   });
 
   it('correctly identifies terminal statuses', () => {
-    expect(getNextAllowedStatuses('delivered')).toEqual([]);
     expect(getNextAllowedStatuses('cancelled')).toEqual([]);
+    expect(getNextAllowedStatuses('refunded')).toEqual([]);
     expect(getNextAllowedStatuses('rto')).toEqual([]);
     expect(canTransitionTo('delivered', 'pending')).toBe(false);
     expect(canTransitionTo('cancelled', 'confirmed')).toBe(false);

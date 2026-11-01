@@ -1,9 +1,14 @@
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
+  | 'processing'
   | 'shipped'
   | 'delivered'
   | 'cancelled'
+  | 'return_requested'
+  | 'returned'
+  | 'refunded'
+  | 'failed_delivery'
   | 'rto';
 
 export interface Customer {
@@ -107,6 +112,11 @@ export interface Product {
   collectionIds: string[];
   affiliateUrl: string | null;
   purchaseMode: PurchaseMode;
+  productType?: 'affiliate' | 'reseller';
+  costPrice?: number;
+  stockQuantity?: number;
+  sku?: string;
+  lowStockThreshold?: number;
   codEnabled: boolean;
   shippingCharge: number;
   codShippingCharge?: number; // fallback alias
